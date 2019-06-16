@@ -351,7 +351,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             else
                 predictionsAvailable = false;
 
-            MenuItem item,dividerItem;
+            MenuItem item;
             CharSequence title;
             int titleMaxChars = 0;
             SpannableString s;
