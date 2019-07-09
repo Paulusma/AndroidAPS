@@ -431,6 +431,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showratios", false));
 
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
+            title = item.getTitle();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showactivity", true));
+
             if (MainApp.devBranch) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
                 title = item.getTitle();
@@ -705,8 +713,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 onClickQuickwizard();
                 break;
             case R.id.overview_wizardbutton:
-                WizardDialog wizardDialog = new WizardDialog();
-                wizardDialog.show(manager, "WizardDialog");
+                OverviewPlugin.getPlugin().quickWizard.getActive(this, "execWizard");
                 break;
             case R.id.overview_calibrationbutton:
                 if (xdrip) {
@@ -770,6 +777,18 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
     }
 
+    public void execWizard(QuickWizardEntry entry) {
+        if(entry != null) {
+            FragmentManager manager = getFragmentManager();
+            WizardDialog wizardDialog = new WizardDialog();
+            String meal = entry.buttonText();
+            if(meal.startsWith("Aantal KH"))
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), "Aantal KH");
+            else
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.buttonText());
+            wizardDialog.show(manager, "WizardDialog");        }
+    }
+
     @Override
     public boolean onLongClick(View v) {
         switch (v.getId()) {
@@ -810,7 +829,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         final Profile profile = ProfileFunctions.getInstance().getProfile();
         final TempTarget tempTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
 
-        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive();
+        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
         if (quickWizardEntry != null && actualBg != null && profile != null) {
             quickWizardButton.setVisibility(View.VISIBLE);
             final BolusWizard wizard = quickWizardEntry.doCalc(profile, tempTarget, actualBg, true);
@@ -1301,7 +1320,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
 
         // QuickWizard button
-        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive();
+        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
         if (quickWizardEntry != null && lastBG != null && pump.isInitialized() && !pump.isSuspended()) {
             quickWizardButton.setVisibility(View.VISIBLE);
             String text = quickWizardEntry.buttonText() + "\n" + DecimalFormatter.to0Decimal(quickWizardEntry.carbs()) + "g";

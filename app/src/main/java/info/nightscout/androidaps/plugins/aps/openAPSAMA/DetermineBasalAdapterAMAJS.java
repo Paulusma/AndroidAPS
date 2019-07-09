@@ -193,6 +193,8 @@ public class DetermineBasalAdapterAMAJS {
         String units = profile.getUnits();
 
         mProfile = new JSONObject();
+        mProfile.put("percentMinChangeChange",
+                SP.getDouble(R.string.key_loop_openmode_min_change, 30d));
         mProfile.put("max_iob", maxIob);
         mProfile.put("dia", Math.min(profile.getDia(), 3d));
         mProfile.put("type", "current");
