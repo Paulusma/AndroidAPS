@@ -101,6 +101,15 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     private boolean accepted;
     private boolean okClicked;
 
+    private String meal;
+    private Double mealCarbs;
+
+
+    public void SetInitialValues(Double _carbs, String _meal) {
+        mealCarbs = _carbs;
+        meal = _meal;
+    }
+
     public WizardDialog() {
         super();
     }
@@ -237,11 +246,27 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         Integer maxCarbs = MainApp.getConstraintChecker().getMaxCarbsAllowed().value();
         Double maxCorrection = MainApp.getConstraintChecker().getMaxBolusAllowed().value();
 
+        String message = "";
+        if (mealCarbs > maxCarbs) {
+            message += "KOOLHYDRATEN AANGEPAST:\nmaaltijd is " + mealCarbs + "\nmaar u mag max " + maxCarbs.intValue() + " innemen!";
+            mealCarbs = maxCarbs.doubleValue();
+        }
+
+        if (!message.equals("")) {
+            Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+            i.putExtra("soundid", R.raw.error);
+            i.putExtra("status", message);
+            i.putExtra("title", "Maaltijdkeuze");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            MainApp.instance().startActivity(i);
+        }
+
         editBg.setParams(0d, 0d, 500d, 0.1d, new DecimalFormat("0.0"), false, textWatcher);
-        editCarbs.setParams(0d, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
+        editCarbs.setParams(mealCarbs, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
         double bolusstep = ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep;
         editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
         editCarbTime.setParams(0d, -60d, 60d, 5d, new DecimalFormat("0"), false);
+        notesEdit.setText(meal);
         initDialog();
 
         setCancelable(true);
