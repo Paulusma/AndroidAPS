@@ -364,7 +364,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             PopupMenu popup = new PopupMenu(v.getContext(), v);
 
             if (predictionsAvailable) {
-                item = popup.getMenu().add(Menu.FIRST, CHARTTYPE.PRE.ordinal(), Menu.NONE, "Predictions");
+                item = popup.getMenu().add(Menu.NONE, CHARTTYPE.PRE.ordinal(), Menu.NONE, "Predictions");
                 title = item.getTitle();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.prediction, null)), 0, s.length(), 0);
@@ -373,7 +373,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 item.setChecked(SP.getBoolean("showprediction", true));
             }
 
-            item = popup.getMenu().add(Menu.FIRST, CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
             title = item.getTitle();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.basal, null)), 0, s.length(), 0);
@@ -381,7 +381,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showbasals", true));
 
-            item = popup.getMenu().add(Menu.FIRST, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
             title = item.getTitle();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
