@@ -395,6 +395,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             dividerItem = popup.getMenu().add("");
             dividerItem.setEnabled(false);
 
+            dividerItem = popup.getMenu().add("");
+            dividerItem.setEnabled(false);
+
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.IOB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_iob));
             title = item.getTitle();
             if (titleMaxChars < title.length()) titleMaxChars =  title.length();
