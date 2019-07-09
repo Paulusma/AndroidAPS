@@ -47,6 +47,7 @@ import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeA
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.Round;
+import info.nightscout.androidaps.utils.SP;
 
 /**
  * Created by mike on 18.10.2017.
@@ -369,7 +370,9 @@ public class GraphData {
         actSeries.setDrawBackground(false);
         actSeries.setColor(MainApp.gc(R.color.activity));
         actSeries.setThickness(3);
-        actScale.setMultiplier(scale / 0.04d);  //TODO for clarity should be fixed scale, but what max? For now 0.04d seems reasonable.
+
+        double iaScale = SP.getDouble(R.string.key_scale_insulin_activity, 0.05);
+        actScale.setMultiplier(scale / iaScale);
 
         addSeries(actSeries);
     }
