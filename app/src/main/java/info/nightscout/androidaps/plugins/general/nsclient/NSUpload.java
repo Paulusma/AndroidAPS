@@ -494,6 +494,30 @@ public class NSUpload {
         DbLogger.dbAdd(intent, data.toString());
     }
 
+    public static void uploadActivityAtBg(BgReading reading, String source) {
+        Context context = MainApp.instance().getApplicationContext();
+        Bundle bundle = new Bundle();
+        bundle.putString("action", "dbAdd");
+        bundle.putString("collection", "entries");
+        JSONObject data = new JSONObject();
+        try {
+            data.put("device", source);
+            data.put("date", reading.date);
+            data.put("dateString", DateUtil.toISOString(reading.date));
+            data.put("sgv", reading.value);
+            data.put("direction", reading.direction);
+            data.put("type", "sgv");
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        bundle.putString("data", data.toString());
+        Intent intent = new Intent(Intents.ACTION_DATABASE);
+        intent.putExtras(bundle);
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        DbLogger.dbAdd(intent, data.toString());
+    }
+
     public static void uploadAppStart() {
         if (SP.getBoolean(R.string.key_ns_logappstartedevent, true)) {
             Context context = MainApp.instance().getApplicationContext();

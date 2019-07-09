@@ -719,8 +719,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 onClickQuickwizard();
                 break;
             case R.id.overview_wizardbutton:
-                WizardDialog wizardDialog = new WizardDialog();
-                wizardDialog.show(manager, "WizardDialog");
+                OverviewPlugin.getPlugin().quickWizard.getActive(this, "execWizard");
                 break;
             case R.id.overview_calibrationbutton:
                 if (xdrip) {
@@ -784,6 +783,18 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
     }
 
+    public void execWizard(QuickWizardEntry entry) {
+        if(entry != null) {
+            FragmentManager manager = getFragmentManager();
+            WizardDialog wizardDialog = new WizardDialog();
+            String meal = entry.buttonText();
+            if(meal.startsWith("Aantal KH"))
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), "Aantal KH");
+            else
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.buttonText());
+            wizardDialog.show(manager, "WizardDialog");        }
+    }
+
     @Override
     public boolean onLongClick(View v) {
         switch (v.getId()) {
@@ -824,7 +835,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         final Profile profile = ProfileFunctions.getInstance().getProfile();
         final TempTarget tempTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
 
-        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive();
+        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
         if (quickWizardEntry != null && actualBg != null && profile != null) {
             quickWizardButton.setVisibility(View.VISIBLE);
             final BolusWizard wizard = quickWizardEntry.doCalc(profile, tempTarget, actualBg, true);
@@ -1315,7 +1326,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
 
         // QuickWizard button
-        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive();
+        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
         if (quickWizardEntry != null && lastBG != null && pump.isInitialized() && !pump.isSuspended()) {
             quickWizardButton.setVisibility(View.VISIBLE);
             String text = quickWizardEntry.buttonText() + "\n" + DecimalFormatter.to0Decimal(quickWizardEntry.carbs()) + "g";
