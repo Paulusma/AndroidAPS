@@ -29,8 +29,12 @@ var round_basal = require('./round-basal');
     }
 
     var suggestedRate = round_basal(rate, profile);
-    if (typeof(currenttemp) !== 'undefined' && typeof(currenttemp.duration) !== 'undefined' && typeof(currenttemp.rate) !== 'undefined' && currenttemp.duration > 20 && suggestedRate <= currenttemp.rate * 1.2 && suggestedRate >= currenttemp.rate * 0.8) {
-        rT.reason += ", but "+currenttemp.duration+"m left and " + currenttemp.rate + " ~ req " + suggestedRate + "U/hr: no action required";
+    var minChangePlus = 1+profile.percentMinChangeChange/100;
+    var minChangeMin = 1-profile.percentMinChangeChange/100;
+    if (typeof(currenttemp) !== 'undefined' && typeof(currenttemp.duration) !== 'undefined' && typeof(currenttemp.rate) !== 'undefined'
+        && currenttemp.duration > 10
+        && suggestedRate <= currenttemp.rate * minChangePlus && suggestedRate >= currenttemp.rate * minChangeMin) {
+        rT.reason += ", but current has still "+currenttemp.duration+"m left and suggested rate " + suggestedRate + " is within "+profile.percentMinChangeChange+" % of current rate " + currenttemp.rate + "U/hr: no action required";
         return rT;
     }
 
@@ -51,7 +55,7 @@ var round_basal = require('./round-basal');
         rT.rate = suggestedRate;
         return rT;
       }
-    } else {
+    } else{
       rT.duration = duration;
       rT.rate = suggestedRate;
       return rT;

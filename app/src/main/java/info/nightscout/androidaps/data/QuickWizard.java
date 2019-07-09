@@ -1,11 +1,30 @@
 package info.nightscout.androidaps.data;
 
+import android.app.AlertDialog;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.Toast;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import info.nightscout.androidaps.MainActivity;
+import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.utils.SP;
 
 /**
@@ -49,7 +68,13 @@ public class QuickWizard {
         return false;
     }
 
-    public QuickWizardEntry getActive() {
+    public QuickWizardEntry getActive(OverviewFragment fragment, String methodName) {
+        QuickWizardEntry selectedEntry = null;
+        Map<String, QuickWizardEntry> activeEntries = new HashMap<>();
+        QuickWizardEntry defaultEntry = null;
+        Integer maxCarbs = 0;
+        final String SELECT_MEAL = "_Selecteer een maaltijd_";
+
         for (int i = 0; i < storage.length(); i++) {
             QuickWizardEntry entry;
             try {
@@ -57,9 +82,71 @@ public class QuickWizard {
             } catch (JSONException e) {
                 continue;
             }
-            if (entry.isActive()) return entry;
+//            if (entry.isActive()) {
+            activeEntries.put(entry.buttonText(), entry);
+            if (entry.carbs() > maxCarbs) {
+                defaultEntry = entry;
+                maxCarbs = entry.carbs();
+            }
+//            }
         }
-        return null;
+
+        if (!methodName.equals("")) {
+            try {
+                Class<?> c = fragment.getClass();// Class.forName("class name");
+                Class[] parameterTypes = new Class[]{QuickWizardEntry.class};
+                Method method = c.getDeclaredMethod(methodName, parameterTypes);
+                //               if (activeEntries.size() > 1) {
+                // Let user select among active entries
+                List<String> names = new ArrayList<>();
+                for (String activeEntry : activeEntries.keySet()) {
+                    names.add(activeEntry);
+                }
+                Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
+                names.add(0,SELECT_MEAL);
+
+                final AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getActivity());
+                LayoutInflater inflater = fragment.getLayoutInflater();
+                builder.setView(inflater.inflate(R.layout.dialog_select_meal, null));
+//                    builder.setTitle("Selecteer een maaltijd");
+                final AlertDialog dialog = builder.create();
+                dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+                dialog.show();
+
+                Spinner spinFoodItems = dialog.findViewById(R.id.spinFooditems);
+
+                ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(fragment.getActivity(),
+                        R.layout.spinner_item, names);
+                spinFoodItems.setAdapter(dataAdapter);
+                int pos = dataAdapter.getPosition(SELECT_MEAL);
+                spinFoodItems.setSelection(pos);
+                spinFoodItems.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        String name = (String) parent.getItemAtPosition(position);
+                        QuickWizardEntry selectedActiveEntry = activeEntries.get(name);
+                        if (!name.equals(SELECT_MEAL)) {
+                            dialog.dismiss();
+                            try {
+                                method.invoke(fragment, selectedActiveEntry);
+                            } catch (Exception e) {
+                                Toast.makeText(fragment.getActivity(), "Fout in uitvoeren functie: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                    public void onNothingSelected(AdapterView<?> parent) {
+                    }
+                });
+//                } else
+//                    method.invoke(fragment,defaultEntry);
+            } catch (Exception e) {
+                Toast.makeText(fragment.getActivity(), "Fout in uitvoeren functie: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        } else
+            selectedEntry = defaultEntry;
+
+        return selectedEntry;
     }
 
     public QuickWizardEntry newEmptyItem() {
