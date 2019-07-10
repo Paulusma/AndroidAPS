@@ -431,14 +431,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showratios", false));
 
-            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
-            title = item.getTitle();
-            s = new SpannableString(title);
-            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
-            item.setTitle(s);
-            item.setCheckable(true);
-            item.setChecked(SP.getBoolean("showactivity", true));
-
             if (MainApp.devBranch) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
                 title = item.getTitle();
