@@ -376,6 +376,7 @@ public class GraphData {
 
         addSeries(actSeries);
     }
+    
 
     // scale in % of vertical size (like 0.3)
     public void addIob(long fromTime, long toTime, boolean useForScale, double scale) {
