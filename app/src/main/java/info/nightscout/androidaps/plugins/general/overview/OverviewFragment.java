@@ -1446,7 +1446,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.formatAxis(fromTime, endTime);
 
             if(SP.getBoolean("showactivity", true)) {
-                graphData.addActivity(fromTime, endTime, graphData.maxY);
+                graphData.addActivity(fromTime, endTime, 1d);
             }
 
             // Treatments

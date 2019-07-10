@@ -347,9 +347,12 @@ public class GraphData {
     }
 
     public void addActivity(long fromTime, long toTime, double scale) {
-        FixedLineGraphSeries<ScaledDataPoint> actSeries;
-        List<ScaledDataPoint> actArray = new ArrayList<>();
-        double lastAct = 0;
+        FixedLineGraphSeries<ScaledDataPoint> actSeriesHist;
+        List<ScaledDataPoint> actArrayHist = new ArrayList<>();
+        FixedLineGraphSeries<ScaledDataPoint> actSeriesPred;
+        List<ScaledDataPoint> actArrayPred = new ArrayList<>();
+
+        double now = System.currentTimeMillis();
         Scale actScale = new Scale();
         IobTotal total = null;
 
@@ -360,23 +363,37 @@ public class GraphData {
                 total = iobCobCalculatorPlugin.calculateFromTreatmentsAndTempsSynchronized(time, profile);
             act = total.activity;
 
-            actArray.add(new ScaledDataPoint(time, act, actScale));
-            lastAct = act;
+            if(time<=now)
+                actArrayHist.add(new ScaledDataPoint(time, act, actScale));
+            else
+                actArrayPred.add(new ScaledDataPoint(time, act, actScale));
         }
 
-        ScaledDataPoint[] actData = new ScaledDataPoint[actArray.size()];
-        actData = actArray.toArray(actData);
-        actSeries = new FixedLineGraphSeries<>(actData);
-        actSeries.setDrawBackground(false);
-        actSeries.setColor(MainApp.gc(R.color.activity));
-        actSeries.setThickness(3);
+        double maxIAValue = SP.getDouble(R.string.key_scale_insulin_activity, 0.05);
+        actScale.setMultiplier(maxY*scale / maxIAValue);
 
-        double iaScale = SP.getDouble(R.string.key_scale_insulin_activity, 0.05);
-        actScale.setMultiplier(scale / iaScale);
+        ScaledDataPoint[] actData = new ScaledDataPoint[actArrayHist.size()];
+        actData = actArrayHist.toArray(actData);
+        actSeriesHist = new FixedLineGraphSeries<>(actData);
+        actSeriesHist.setDrawBackground(false);
+        actSeriesHist.setColor(MainApp.gc(R.color.activity));
+        actSeriesHist.setThickness(3);
 
-        addSeries(actSeries);
+        addSeries(actSeriesHist);
+
+        actData = new ScaledDataPoint[actArrayPred.size()];
+        actData = actArrayPred.toArray(actData);
+        actSeriesPred = new FixedLineGraphSeries<>(actData);
+
+        Paint paint = new Paint();
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(3);
+        paint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
+        paint.setColor(MainApp.gc(R.color.activity));
+        actSeriesPred.setCustomPaint(paint);
+
+        addSeries(actSeriesPred);
     }
-    
 
     // scale in % of vertical size (like 0.3)
     public void addIob(long fromTime, long toTime, boolean useForScale, double scale) {
