@@ -358,15 +358,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             else
                 predictionsAvailable = false;
 
-            MenuItem item,dividerItem;
+            MenuItem item;
             CharSequence title;
-            int titleMaxChars = 0;
             SpannableString s;
             PopupMenu popup = new PopupMenu(v.getContext(), v);
+
             if (predictionsAvailable) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.PRE.ordinal(), Menu.NONE, "Predictions");
                 title = item.getTitle();
-                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.prediction, null)), 0, s.length(), 0);
                 item.setTitle(s);
@@ -376,28 +375,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.basal, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showbasals", true));
 
-            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
-            title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
-            s = new SpannableString(title);
-            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
-            item.setTitle(s);
-            item.setCheckable(true);
-            item.setChecked(SP.getBoolean("showactivity", true));
-
-            dividerItem = popup.getMenu().add("");
-            dividerItem.setEnabled(false);
-
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.IOB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_iob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -406,7 +391,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.COB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_cob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.cob, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -415,7 +399,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEV.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_deviations));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.deviations, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -424,27 +407,29 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.SEN.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_sensitivity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.ratio, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showratios", false));
 
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACT.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
+            title = item.getTitle();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showactivity", true));
+
             if (MainApp.devBranch) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
                 title = item.getTitle();
-                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.devslopepos, null)), 0, s.length(), 0);
                 item.setTitle(s);
                 item.setCheckable(true);
                 item.setChecked(SP.getBoolean("showdevslope", false));
             }
-
-            // Fairly good guestimate for required divider text size...
-            title = new String(new char[titleMaxChars+10]).replace("\0", "_");
-            dividerItem.setTitle(title);
 
             popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                 @Override
@@ -1560,7 +1545,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.formatAxis(fromTime, endTime);
 
             if(SP.getBoolean("showactivity", true)) {
-                graphData.addActivity(fromTime, endTime, 1d);
+                graphData.addActivity(fromTime, endTime, graphData.maxY);
             }
 
             // Treatments

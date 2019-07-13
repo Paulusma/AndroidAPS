@@ -47,7 +47,6 @@ import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeA
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.Round;
-import info.nightscout.androidaps.utils.SP;
 
 /**
  * Created by mike on 18.10.2017.
@@ -346,53 +345,45 @@ public class GraphData {
                 ? Profile.fromMgdlToUnits(bgReadingsArray.get(0).value, units) : Profile.fromMgdlToUnits(100, units);
     }
 
+//!!!
+ //   public void addActivity(long fromTime, long toTime, boolean useForScale, double scale) {
     public void addActivity(long fromTime, long toTime, double scale) {
-        FixedLineGraphSeries<ScaledDataPoint> actSeriesHist;
-        List<ScaledDataPoint> actArrayHist = new ArrayList<>();
-        FixedLineGraphSeries<ScaledDataPoint> actSeriesPred;
-        List<ScaledDataPoint> actArrayPred = new ArrayList<>();
-
-        double now = System.currentTimeMillis();
+        FixedLineGraphSeries<ScaledDataPoint> actSeries;
+        List<ScaledDataPoint> actArray = new ArrayList<>();
+        Double maxActValueFound = Double.MIN_VALUE;
+        double lastAct = 0;
         Scale actScale = new Scale();
         IobTotal total = null;
 
         for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             double act = 0d;
-            if (profile == null) continue;
-            total = iobCobCalculatorPlugin.calculateFromTreatmentsAndTempsSynchronized(time, profile);
+            if (profile != null)
+                total = iobCobCalculatorPlugin.calculateFromTreatmentsAndTempsSynchronized(time, profile);
             act = total.activity;
 
-            if(time<=now)
-                actArrayHist.add(new ScaledDataPoint(time, act, actScale));
-            else
-                actArrayPred.add(new ScaledDataPoint(time, act, actScale));
+            actArray.add(new ScaledDataPoint(time, act, actScale));
+            maxActValueFound = Math.max(maxActValueFound, Math.abs(act));
+            lastAct = act;
         }
 
-        double maxIAValue = SP.getDouble(R.string.key_scale_insulin_activity, 0.05);
-        actScale.setMultiplier(maxY*scale / maxIAValue);
+        ScaledDataPoint[] actData = new ScaledDataPoint[actArray.size()];
+        actData = actArray.toArray(actData);
+        actSeries = new FixedLineGraphSeries<>(actData);
+        actSeries.setDrawBackground(false);
+        actSeries.setColor(MainApp.gc(R.color.mdtp_white));
+        actSeries.setThickness(3);
 
-        ScaledDataPoint[] actData = new ScaledDataPoint[actArrayHist.size()];
-        actData = actArrayHist.toArray(actData);
-        actSeriesHist = new FixedLineGraphSeries<>(actData);
-        actSeriesHist.setDrawBackground(false);
-        actSeriesHist.setColor(MainApp.gc(R.color.activity));
-        actSeriesHist.setThickness(3);
+        // calculate scale for activity := max activity due to combined max bolus & max temp basal
+        // set scale to a sensible %% of that
+        /*
+         1) create Treatment for max Bolus at time = current - peak time
+         2) call insulininterface.iobCalcForTreatment at current time
+         3) activityContrib contains peak activity = max activity due to bolus
+         */
+        actScale.setMultiplier(scale / 0.04d);  //TODO for clarity should be fixed scale, but what max? For now 0.04d seems reasonable.
 
-        addSeries(actSeriesHist);
-
-        actData = new ScaledDataPoint[actArrayPred.size()];
-        actData = actArrayPred.toArray(actData);
-        actSeriesPred = new FixedLineGraphSeries<>(actData);
-
-        Paint paint = new Paint();
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(3);
-        paint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
-        paint.setColor(MainApp.gc(R.color.activity));
-        actSeriesPred.setCustomPaint(paint);
-
-        addSeries(actSeriesPred);
+        addSeries(actSeries);
     }
 
     // scale in % of vertical size (like 0.3)
