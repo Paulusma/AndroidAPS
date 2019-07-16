@@ -100,6 +100,7 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     var rTreason = "";
     rTreason += "Min. rate change: "+ maxChangePercent.toFixed(0)+"%;";
     /*
+//!!!
     if((bg > 7*18 && glucose_status.short_avgdelta >= 5)){
         rTreason += "Overshooting to large high protection (short delta = "+glucose_status.short_avgdelta.toFixed(0)+"): adj BG "+convert_bg(bg, profile)
             + " and maxSafeBasal "+maxSafeBasal.toFixed(1);
@@ -109,6 +110,7 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     }else
     */
 
+//!!!
     if(bg > 12*18 && (glucose_status.short_avgdelta <= 5 && glucose_status.short_avgdelta >= -5)){
         rTreason += "Stable high prevention (short delta = "+glucose_status.short_avgdelta.toFixed(0)+"): adj BG "+convert_bg(bg, profile);
         bg = bg + 2*(bg-10*18);
