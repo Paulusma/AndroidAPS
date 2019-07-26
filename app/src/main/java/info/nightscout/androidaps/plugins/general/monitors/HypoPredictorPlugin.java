@@ -64,11 +64,13 @@ public class HypoPredictorPlugin extends PluginBase {
         MainApp.bus().register(this);
         super.onStart();
 
-        // Check after AndroidAPS restart if we had a TT running
-        TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
-        if(currentTarget != null && currentTarget.reason.equals(MainApp.gs(R.string.hypo_detection))){
-            runningHypoTT = currentTarget;
-            timePCLastSatisfied = now();
+        // Check after AndroidAPS restart if we had a TT running and sync with that
+        synchronized (this) {
+            TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
+            if (currentTarget != null && currentTarget.reason.equals(MainApp.gs(R.string.hypo_detection))) {
+                runningHypoTT = currentTarget;
+                timePCLastSatisfied = now();
+            }
         }
     }
 
@@ -80,19 +82,23 @@ public class HypoPredictorPlugin extends PluginBase {
 
     @Subscribe
     @SuppressWarnings("unused")
-    public void onEventNewBG(final EventNewBG ev) {
-        if (this != getPlugin()) {
-            if (L.isEnabled(L.AUTOSENS))
-                log.debug("Ignoring event for non default instance");
-            return;
+    public synchronized void onEventNewBG(final EventNewBG ev) {
+        try {
+            if (this != getPlugin()) {
+                if (L.isEnabled(L.AUTOSENS))
+                    log.debug("Ignoring event for non default instance");
+                return;
+            }
+            if (ev.bgReading != null)
+                executeCheck(ev.bgReading.value);
+        } catch (Exception e) {
+            log.error("Unhandled exception", e);
         }
-        if(ev.bgReading != null)
-            executeCheck(ev.bgReading.value);
     }
 
     @Subscribe
     @SuppressWarnings("unused")
-    public void onEventTempTargetChange(final EventTempTargetChange ev) {
+    public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
         try {
             if (this != getPlugin()) {
                 if (L.isEnabled(L.AUTOSENS))
@@ -110,23 +116,23 @@ public class HypoPredictorPlugin extends PluginBase {
                     endHypoTT(false); // sync
                     executeCheck(0);
                 }
-            }else{
+            } else {
                 executeCheck(0);
             }
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
     }
 
     @Subscribe
     @SuppressWarnings("unused")
-    public void onEventPreferenceChange(final EventPreferenceChange ev) {
+    public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
         try {
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
-                    ev.isChanged(R.string.key_hypoppred_window_from)) {
+                    ev.isChanged(R.string.key_hypoppred_window_from) ||
+                    ev.isChanged(R.string.key_hypo_target)) {
 
                 // Sync state with changed preferences
                 executeCheck(0);
@@ -136,29 +142,8 @@ public class HypoPredictorPlugin extends PluginBase {
         }
     }
 
-    private boolean preConditionSatisfied(double lastBG) {
-        final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
-        if (currentProfile == null) {
-            return false;
-        }
-
-        double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
-                , currentProfile.getUnits());
-        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
-        long frameStart = SP.getLong(R.string.key_hypoppred_window_from, 0L);
-        long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
-        int time = Profile.secondsFromMidnight()/60;
-
-        if ((lastBG <= bgThreshold)
-                && (!useFrame || (time >= frameStart && time < frameEnd))) {
-            timePCLastSatisfied = now();
-            return true;
-        }
-        return false;
-    }
-
     // Threadsafe to prevent checks on inconsistent state
-    private synchronized void executeCheck(double lastBG) {
+    private void executeCheck(double lastBG) {
         try {
             if (lastBG == 0) {
                 BgReading bgReading = DatabaseHelper.lastBg();
@@ -171,7 +156,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 if (!preConditionSatisfied(lastBG)) {
                     endHypoTT(true);
                 }
-            }else if(preConditionSatisfied(lastBG)) {
+            } else if (preConditionSatisfied(lastBG)) {
                 final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
                 if (currentProfile == null) {
                     return;
@@ -188,6 +173,38 @@ public class HypoPredictorPlugin extends PluginBase {
         } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
+    }
+
+    private boolean preConditionSatisfied(double lastBG) {
+        final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
+        if (currentProfile == null) {
+            return false;
+        }
+
+        // First check if BG lower then threshold
+        double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
+                , currentProfile.getUnits());
+        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
+        long frameStart = SP.getLong(R.string.key_hypoppred_window_from, 0L);
+        long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
+        int time = Profile.secondsFromMidnight() / 60;
+
+        if ((lastBG <= bgThreshold)
+                && (!useFrame || (time >= frameStart && time < frameEnd))) {
+            timePCLastSatisfied = now();
+            return true;
+        }
+
+        // If not check if hypo is expected using polynomal fit
+        if(true /*TODO: preference: use polynomal method?*/) {
+            return checkHypoUsingPolynomalFit();
+        }
+
+        return false;
+    }
+
+    private boolean checkHypoUsingPolynomalFit() {
+        return false;
     }
 
     private boolean pluginIsRunning() {
@@ -220,7 +237,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 int minutesRemaining = (int) (previousTT.end() - now()) / 60 / 1000;
                 previousTT.date(DateUtil.roundDateToSec(now()))
                         .duration(minutesRemaining)
-                        .reason(previousTT.reason+" (continued)");
+                        .reason(previousTT.reason + " (continued)");
                 TreatmentsPlugin.getPlugin().addToHistoryTempTarget(previousTT);
             } else {
                 TempTarget tempTT = new TempTarget()
@@ -239,4 +256,19 @@ public class HypoPredictorPlugin extends PluginBase {
         timePCLastSatisfied = 0;
     }
 
+    private class HypoDetails {
+        private int minutesFromNow;
+        private double lowestBG;
+        private double currentBG;
+
+        protected HypoDetails(int _mfn, double bg, double lBG){
+            minutesFromNow = _mfn;
+            lowestBG = lBG;
+            currentBG = bg;
+        }
+
+        protected double slope(){
+            return (currentBG - lowestBG)/minutesFromNow;
+        }
+    }
 }
