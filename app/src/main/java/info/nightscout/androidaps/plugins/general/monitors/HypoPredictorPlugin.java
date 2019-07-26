@@ -2,8 +2,16 @@ package info.nightscout.androidaps.plugins.general.monitors;
 
 import com.squareup.otto.Subscribe;
 
+import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
+import org.apache.commons.math3.fitting.PolynomialCurveFitter;
+import org.apache.commons.math3.fitting.WeightedObservedPoints;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -20,6 +28,8 @@ import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DataPointWithLabelInterface;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.DefaultValueHelper;
@@ -131,8 +141,7 @@ public class HypoPredictorPlugin extends PluginBase {
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
-                    ev.isChanged(R.string.key_hypoppred_window_from) ||
-                    ev.isChanged(R.string.key_hypo_target)) {
+                    ev.isChanged(R.string.key_hypoppred_window_from)) {
 
                 // Sync state with changed preferences
                 executeCheck(0);
@@ -181,7 +190,13 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
-        // First check if BG lower then threshold
+        // If not check if hypo is expected using polynomal fit
+        if (true /*TODO: preference: use polynomal method?*/) {
+            return checkHypoUsingPolynomalFit();
+        }
+
+        // Lastly check if condition 'BG lower then threshold' applies
+        // This is done last to give predictors a chance to warn for impending hypo
         double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
                 , currentProfile.getUnits());
         boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
@@ -195,15 +210,6 @@ public class HypoPredictorPlugin extends PluginBase {
             return true;
         }
 
-        // If not check if hypo is expected using polynomal fit
-        if(true /*TODO: preference: use polynomal method?*/) {
-            return checkHypoUsingPolynomalFit();
-        }
-
-        return false;
-    }
-
-    private boolean checkHypoUsingPolynomalFit() {
         return false;
     }
 
@@ -256,19 +262,108 @@ public class HypoPredictorPlugin extends PluginBase {
         timePCLastSatisfied = 0;
     }
 
+    /*
+     * Hypo detection algorithm using polynomal fit.
+     * */
+    private PolynomialFunction bgCurve = null;
+    private boolean checkHypoUsingPolynomalFit() {
+
+        int steps5Min = 12; //TODO: number of datapoints as preference parameter
+        double weightFactor = 0.95d; //TODO: weight factor as preference parameter
+        double hypoBG = 3.5d; //TODO: preference parameter
+        long horizonmSec = 120*60*1000;
+
+        // Get recent observations
+        long timeStartBG = 0;
+        long timeMinBG = 0;
+        double minBgValue = Double.MIN_VALUE;
+        long nowTime = now();
+        long fromTime = nowTime - steps5Min * 5 * 60 * 1000;
+
+        IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
+        List<BgReading> bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
+
+        bgCurve = null;
+        if (bgReadingsArray == null || bgReadingsArray.size() == 0) {
+            return false;
+        }
+
+        BgReading bgr;
+        WeightedObservedPoints obs = new WeightedObservedPoints();
+        for (int i = 0; i < bgReadingsArray.size(); i++) {
+            bgr = bgReadingsArray.get(i);
+            if (bgr.date <= fromTime) continue;
+            int pow = (int)((bgr.date-fromTime) / (60 * 1000 * 5d));
+            double weight = Math.pow(weightFactor, pow);
+            obs.add(weight, bgr.date, bgr.value);
+        }
+        List lObs = obs.toList();
+        if (lObs.size() < 3) return false;
+
+        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
+        double[] coeff = fitter.fit(lObs);
+
+        // Determine onset and depth of extremum
+        bgCurve = new PolynomialFunction(coeff);
+        double topt = 0, t1 = 0, t2 = 0d;
+        double a = coeff[2];
+        double b = coeff[1];
+        double c = coeff[0] - hypoBG;
+        if (a != 0) {
+            double d;
+            d = Math.pow(b, 2) - 4 * a * c;
+            if (d >= 0) {
+                t1 = (-b - Math.sqrt(d)) / (2 * a) ;
+                t2 = (-b + Math.sqrt(d)) / (2 * a) ;
+                if ((t1 >= nowTime && t1 <= nowTime+horizonmSec) || (t2 >= nowTime && t2 <= nowTime+horizonmSec))
+                    return true;
+                else
+                    return false;
+            } else {
+                // not reaching thresholdBG
+                boolean belowThreshold = (bgCurve.value(nowTime) < 0);
+                return belowThreshold;
+            }
+        } else if (b != 0) {
+            t1 = -c / b;
+            boolean imminentHypo = (t1 >= nowTime && t1 <= nowTime+horizonmSec);
+            return imminentHypo;
+        } else {
+            // not reaching thresholdBG
+            boolean belowThreshold = (bgCurve.value(nowTime) < 0);
+            return belowThreshold;
+        }
+    }
+
+    public List<BgReading>  getFittedCurve(long fromTime, long toTime) {
+        if (bgCurve == null)
+            return null;
+
+        List<BgReading> curve = new ArrayList<>();
+        int nSteps = (int) (toTime - fromTime) / ( 60 * 1000);
+        for (int i = 0; i <= nSteps; i++) {
+            BgReading bg = new BgReading();
+            bg.value = bgCurve.value(fromTime + i * ( 60 * 1000));
+            bg.date = fromTime + i *  60 * 1000;
+            curve.add(bg);
+        }
+
+        return curve;
+    }
+
     private class HypoDetails {
         private int minutesFromNow;
         private double lowestBG;
         private double currentBG;
 
-        protected HypoDetails(int _mfn, double bg, double lBG){
+        protected HypoDetails(int _mfn, double bg, double lBG) {
             minutesFromNow = _mfn;
             lowestBG = lBG;
             currentBG = bg;
         }
 
-        protected double slope(){
-            return (currentBG - lowestBG)/minutesFromNow;
+        protected double slope() {
+            return (currentBG - lowestBG) / minutesFromNow;
         }
     }
 }

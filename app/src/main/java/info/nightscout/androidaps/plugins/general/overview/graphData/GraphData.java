@@ -71,7 +71,7 @@ public class GraphData {
         this.iobCobCalculatorPlugin = iobCobCalculatorPlugin;
     }
 
-    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions) {
+    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions, List<BgReading> fittedCurve) {
         double maxBgValue = Double.MIN_VALUE;
         //bgReadingsArray = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, true);
         bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
@@ -95,6 +95,11 @@ public class GraphData {
             for (BgReading prediction : predictions) {
                 if (prediction.value >= 40)
                     bgListArray.add(prediction);
+            }
+        }
+        if (fittedCurve != null) {
+            for (BgReading point : fittedCurve) {
+                bgListArray.add(point);
             }
         }
 

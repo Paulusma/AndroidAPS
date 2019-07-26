@@ -280,7 +280,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 //graphData.addBgReadings(fromTime, toTime, lowLine, highLine, (DetermineBasalResultAMA) finalLastRun.constraintsProcessed);
             ;
         else
-            graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
+            graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null,null);
 
         // set manual x bounds to have nice steps
         graphData.formatAxis(fromTime, toTime);
