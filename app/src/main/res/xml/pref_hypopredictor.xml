@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:validate="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="hypoppred"
+        android:title="@string/hypoppred_settings">
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="0.0"
+            android:summary="@string/hypoppred_threshold_bg_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_hypoppred_threshold_bg"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_threshold_bg"
+            validate:floatminNumber="0.0"
+            validate:testType="floatNumericRange" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_24hwindow_title"
+            android:summary="@string/hypoppred_24hwindow_summary"/>
+
+        <info.nightscout.androidaps.plugins.general.monitors.TimePreference
+            android:defaultValue="0"
+            android:dependency="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_window_from"
+            android:key="@string/key_hypoppred_window_from"
+            android:summary="@string/hypoppred_window_from_summary"
+            />
+
+        <info.nightscout.androidaps.plugins.general.monitors.TimePreference
+            android:defaultValue="24"
+            android:dependency="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_window_to"
+            android:key="@string/key_hypoppred_window_to"
+            android:summary="@string/hypoppred_window_to_summary"
+            />
+
+    </PreferenceCategory>
+</PreferenceScreen>
