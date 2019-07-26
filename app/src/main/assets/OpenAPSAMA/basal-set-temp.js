@@ -27,7 +27,7 @@ var round_basal = require('./round-basal');
     else if (rate > maxSafeBasal) { 
         rate = maxSafeBasal; 
     }
-
+//!!! minChange also used in closed loop
     var suggestedRate = round_basal(rate, profile);
     var minChangePlus = 1+profile.percentMinChangeChange/100;
     var minChangeMin = 1-profile.percentMinChangeChange/100;
