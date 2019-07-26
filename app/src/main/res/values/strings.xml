@@ -1337,6 +1337,24 @@
     <string name="new_version_warning">New version for at least %1$d days available! Fallback to LGS after 60 days, loop will be disabled after 90 days</string>
     <string name="twohours">2h</string>
     <string name="formatinsulinunits">%1$.2fU</string>
+    <string name="description_hypoppred">Tries to detect impending hypo\'s and take corrective measures (start hypo TT) to prevent them.</string>
+    <string name="hypoppred_shortname">hpp</string>
+    <string name="hypoppred">Early hypo detection and prevention</string>
+    <string name="key_hypoppred_bglow">hypoppred_bglow</string>
+    <string name="hypoppred_settings">Detection and prevention of impending hypo\'s</string>
+    <string name="hypoppred_24hwindow_title">Set time frame</string>
+    <string name="hypoppred_24hwindow_summary">As a default auto TT\'s can be started at any time of the day. This can be limited to a specific period by setting a time frame.</string>
+    <string name="hypoppred_window_from">Start:</string>
+    <string name="key_hypoppred_24hwindow">hypoppred_24hwindow</string>
+    <string name="hypoppred_window_from_summary">Start of timeframe</string>
+    <string name="hypoppred_window_to">End:</string>
+    <string name="hypoppred_window_to_summary">End of timeframe</string>
+    <string name="key_hypoppred_threshold_bg">hypoppred_threshold_bg</string>
+    <string name="hypoppred_threshold_bg">Threshold BG</string>
+    <string name="hypoppred_threshold_bg_summary">When BG drops below this threshold an hypo TT is started.</string>
+    <string name="key_hypoppred_window_to">hypoppred_window_to</string>
+    <string name="key_hypoppred_window_from">hypoppred_window_from</string>
+    <string name="hypo_detection">Hypo detection</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
