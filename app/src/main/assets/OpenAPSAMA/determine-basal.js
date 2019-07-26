@@ -174,6 +174,8 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     var sens = profile.sens;
 
     //!!! Lower target if BG level reasonably stable for some time, no carbs left and only small amount of insulin
+    /*
+    //TODO: tijdelijk uitgezet: interfereert met hypo detectie. Omzetten naar een plugin a la hypodetectie!
     if( (glucose_status.short_avgdelta < 3 && glucose_status.short_avgdelta > -3)
         && (glucose_status.long_avgdelta < 3 && glucose_status.long_avgdelta > -3)
         && (glucose_status.delta < 3 && glucose_status.delta > -3)
@@ -184,7 +186,7 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
             max_bg = 5*18;
             rTreason += "Stable BG, no COB and small amount of IOB: dropping target to 5; "
     }
-
+*/
     var tick;
 
     if (glucose_status.delta > -0.5) {
