@@ -235,6 +235,7 @@ dependencies {
         exclude group: "com.google.android", module: "android"
     }
     implementation "org.apache.commons:commons-lang3:3.7"
+    implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation "org.slf4j:slf4j-api:1.7.21"
     // Graphview cannot be upgraded
     implementation "com.jjoe64:graphview:4.0.1"

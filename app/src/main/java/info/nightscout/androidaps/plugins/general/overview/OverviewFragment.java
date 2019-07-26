@@ -86,6 +86,7 @@ import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment;
 import info.nightscout.androidaps.plugins.general.careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.general.careportal.OptionsToShow;
+import info.nightscout.androidaps.plugins.general.monitors.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
@@ -1447,11 +1448,12 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.addInRangeArea(fromTime, endTime, lowLine, highLine);
 
             // **** BG ****
-            if (finalPredictionsAvailable && SP.getBoolean("showprediction", false))
+            if (finalPredictionsAvailable)//TODO: herstel:  && SP.getBoolean("showprediction", false))
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
-                        apsResult.getPredictions());
+                        apsResult.getPredictions(), HypoPredictorPlugin.getPlugin().getFittedCurve(fromTime, toTime));
             else
-                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
+                graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
+                        null,HypoPredictorPlugin.getPlugin().getFittedCurve(fromTime, toTime));
 
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, endTime);
