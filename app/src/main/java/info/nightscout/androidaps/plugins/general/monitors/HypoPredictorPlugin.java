@@ -340,11 +340,12 @@ public class HypoPredictorPlugin extends PluginBase {
             return null;
 
         List<BgReading> curve = new ArrayList<>();
-        int nSteps = (int) (toTime - fromTime) / ( 60 * 1000);
+        long start = (now()-120*60*1000);
+        int nSteps = (int) (toTime - start) / ( 60 * 1000);
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.value = bgCurve.value(fromTime + i * ( 60 * 1000));
-            bg.date = fromTime + i *  60 * 1000;
+            bg.date = start + i *  60 * 1000;
+            bg.value = bgCurve.value(bg.date);
             curve.add(bg);
         }
 
