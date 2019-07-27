@@ -97,11 +97,6 @@ public class GraphData {
                     bgListArray.add(prediction);
             }
         }
-        if (fittedCurve != null) {
-            for (BgReading point : fittedCurve) {
-                bgListArray.add(point);
-            }
-        }
 
         maxBgValue = Profile.fromMgdlToUnits(maxBgValue, units);
         maxBgValue = units.equals(Constants.MGDL) ? Round.roundTo(maxBgValue, 40d) + 80 : Round.roundTo(maxBgValue, 2d) + 4;
@@ -118,6 +113,25 @@ public class GraphData {
         graph.getGridLabelRenderer().setNumVerticalLabels(numOfVertLines);
 
         addSeries(new PointsWithLabelGraphSeries<>(bg));
+        addSeries(new PointsWithLabelGraphSeries<>(bg));
+
+        if (fittedCurve != null) {//TODO: werkt niet...?
+            Scale hppScale = new Scale();
+            FixedLineGraphSeries<ScaledDataPoint> hppSeries;
+            List<ScaledDataPoint> hppArray = new ArrayList<>();
+            for (BgReading point : fittedCurve) {
+                hppArray.add(new ScaledDataPoint(point.date,point.value,hppScale));
+            }
+            ScaledDataPoint[] hppData = new ScaledDataPoint[fittedCurve.size()];
+            hppData = hppArray.toArray(hppData);
+            hppSeries = new FixedLineGraphSeries<>(hppData);
+            hppSeries.setColor(MainApp.gc(R.color.iob));
+            hppSeries.setThickness(3);
+            hppScale.setMultiplier(1);
+
+            addSeries(hppSeries);
+        }
+
     }
 
     public void addInRangeArea(long fromTime, long toTime, double lowLine, double highLine) {

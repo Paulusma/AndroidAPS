@@ -1448,7 +1448,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.addInRangeArea(fromTime, endTime, lowLine, highLine);
 
             // **** BG ****
-            if (finalPredictionsAvailable)//TODO: herstel:  && SP.getBoolean("showprediction", false))
+            if (finalPredictionsAvailable && SP.getBoolean("showprediction", false))
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
                         apsResult.getPredictions(), HypoPredictorPlugin.getPlugin().getFittedCurve(fromTime, toTime));
             else
