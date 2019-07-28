@@ -71,7 +71,7 @@ public class GraphData {
         this.iobCobCalculatorPlugin = iobCobCalculatorPlugin;
     }
 
-    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions, List<BgReading> fittedCurve) {
+    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions) {
         double maxBgValue = Double.MIN_VALUE;
         //bgReadingsArray = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, true);
         bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
@@ -114,26 +114,53 @@ public class GraphData {
 
         addSeries(new PointsWithLabelGraphSeries<>(bg));
         addSeries(new PointsWithLabelGraphSeries<>(bg));
-
-        if (fittedCurve != null) {//TODO: werkt niet...?
-            Scale hppScale = new Scale();
-            FixedLineGraphSeries<ScaledDataPoint> hppSeries;
-            List<ScaledDataPoint> hppArray = new ArrayList<>();
-            for (BgReading point : fittedCurve) {
-                hppArray.add(new ScaledDataPoint(point.date,point.value,hppScale));
-            }
-            ScaledDataPoint[] hppData = new ScaledDataPoint[fittedCurve.size()];
-            hppData = hppArray.toArray(hppData);
-            hppSeries = new FixedLineGraphSeries<>(hppData);
-            hppSeries.setColor(MainApp.gc(R.color.iob));
-            hppSeries.setThickness(3);
-            hppScale.setMultiplier(1);
-
-            addSeries(hppSeries);
-        }
-
     }
 
+    public void addBGCurve(long fromTime, long endTime, List<BgReading> fittedCurve, double lowLine, double highLine) {
+        if (fittedCurve == null)
+            return;
+
+        long nowTime = System.currentTimeMillis();
+        long startTime = nowTime - 150*60*1000;
+
+        FixedLineGraphSeries<ScaledDataPoint> bgAboveLow;
+        List<ScaledDataPoint> bgArrayAboveLow = new ArrayList<>();
+        FixedLineGraphSeries<ScaledDataPoint> bgBelowLow;
+        List<ScaledDataPoint> bgArrayBelowLow = new ArrayList<>();
+
+        double now = System.currentTimeMillis();
+        Scale scale = new Scale();
+
+        for (BgReading point : fittedCurve) {
+            double bg = Profile.fromMgdlToUnits(point.value, units);
+            double time = point.date;
+            if(time > startTime) {
+                if (bg > lowLine)
+                    bgArrayAboveLow.add(new ScaledDataPoint(point.date, bg, scale));
+                else
+                    bgArrayBelowLow.add(new ScaledDataPoint(point.date, bg, scale));
+            }
+        }
+
+        ScaledDataPoint[] bgData = new ScaledDataPoint[bgArrayAboveLow.size()];
+        bgData = bgArrayAboveLow.toArray(bgData);
+        bgAboveLow = new FixedLineGraphSeries<>(bgData);
+        bgAboveLow.setDrawBackground(false);
+        bgAboveLow.setColor(MainApp.gc(R.color.bgfitabove));
+        bgAboveLow.setThickness(1);
+        addSeries(bgAboveLow);
+
+        bgData = new ScaledDataPoint[bgArrayBelowLow.size()];
+        bgData = bgArrayBelowLow.toArray(bgData);
+        bgBelowLow = new FixedLineGraphSeries<>(bgData);
+        bgBelowLow.setDrawBackground(false);
+        bgBelowLow.setColor(MainApp.gc(R.color.bgfitbelow));
+        bgBelowLow.setThickness(2);
+        addSeries(bgBelowLow);
+
+        scale.setMultiplier(1);
+    }
+    
     public void addInRangeArea(long fromTime, long toTime, double lowLine, double highLine) {
         AreaGraphSeries<DoubleDataPoint> inRangeAreaSeries;
 

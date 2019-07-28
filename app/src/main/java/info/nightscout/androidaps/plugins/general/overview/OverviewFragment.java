@@ -1428,6 +1428,12 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
                 fromTime = toTime - T.hours(hoursToFetch).msecs();
                 endTime = toTime + T.hours(predHours).msecs();
+            } else if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
+                int predHours = 2;
+                hoursToFetch = rangeToDisplay - predHours;
+                toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                fromTime = toTime - T.hours(hoursToFetch).msecs();
+                endTime = toTime + T.hours(predHours).msecs();
             } else {
                 hoursToFetch = rangeToDisplay;
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
@@ -1448,13 +1454,16 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.addInRangeArea(fromTime, endTime, lowLine, highLine);
 
             // **** BG ****
-            if (finalPredictionsAvailable && SP.getBoolean("showprediction", false))
+            if (finalPredictionsAvailable && SP.getBoolean("showprediction", false)) {
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
-                        apsResult.getPredictions(), HypoPredictorPlugin.getPlugin().getFittedCurve(fromTime, toTime));
-            else
-                graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
-                        null,HypoPredictorPlugin.getPlugin().getFittedCurve(fromTime, toTime));
+                        apsResult.getPredictions());
+            } else
+                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
 
+            if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL)){// TODO: en verder: && SP.getBoolean("showprediction", false))
+                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve1(fromTime, endTime), lowLine, highLine);
+                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve2(fromTime, endTime), lowLine, highLine);
+            }
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, endTime);
 

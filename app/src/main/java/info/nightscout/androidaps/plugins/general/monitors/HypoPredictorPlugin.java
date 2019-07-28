@@ -5,8 +5,6 @@ import com.squareup.otto.Subscribe;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +26,12 @@ import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DataPointWithLabelInterface;
+import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.DefaultValueHelper;
+import info.nightscout.androidaps.utils.MidnightTime;
 import info.nightscout.androidaps.utils.SP;
 
 import static info.nightscout.androidaps.utils.DateUtil.now;
@@ -99,8 +98,10 @@ public class HypoPredictorPlugin extends PluginBase {
                     log.debug("Ignoring event for non default instance");
                 return;
             }
-            if (ev.bgReading != null)
+            if (ev.bgReading != null) {
+                bgPolynomalFit();
                 executeCheck(ev.bgReading.value);
+            }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
@@ -145,6 +146,9 @@ public class HypoPredictorPlugin extends PluginBase {
 
                 // Sync state with changed preferences
                 executeCheck(0);
+            }else if(ev.isChanged(R.string.key_hypoppred_algorithm_steps) ||
+                    ev.isChanged(R.string.key_hypoppred_algorithm_weight)){
+                bgPolynomalFit();
             }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -192,7 +196,8 @@ public class HypoPredictorPlugin extends PluginBase {
 
         // If not check if hypo is expected using polynomal fit
         if (true /*TODO: preference: use polynomal method?*/) {
-            return checkHypoUsingPolynomalFit();
+            if( checkHypoUsingPolynomalFit())
+                return true;
         }
 
         // Lastly check if condition 'BG lower then threshold' applies
@@ -265,106 +270,142 @@ public class HypoPredictorPlugin extends PluginBase {
     /*
      * Hypo detection algorithm using polynomal fit.
      * */
-    private PolynomialFunction bgCurve = null;
-    private boolean checkHypoUsingPolynomalFit() {
-
-        int steps5Min = 12; //TODO: number of datapoints as preference parameter
-        double weightFactor = 0.95d; //TODO: weight factor as preference parameter
-        double hypoBG = 3.5d; //TODO: preference parameter
-        long horizonmSec = 120*60*1000;
+    private PolynomialFunction bgCurve1 = null;
+    private double[] bgFitCoeff1 = null;
+    private PolynomialFunction bgCurve2 = null;
+    private double[] bgFitCoeff2 = null;
+    private void bgPolynomalFit() {
+        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
+        double weightFactor = SP.getDouble(R.string.key_hypoppred_algorithm_weight, 0.95d);
+        int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
 
         // Get recent observations
         long timeStartBG = 0;
         long timeMinBG = 0;
         double minBgValue = Double.MIN_VALUE;
-        long nowTime = now();
-        long fromTime = nowTime - steps5Min * 5 * 60 * 1000;
+
+        // All times are in sec since midnight
+        long midnight = MidnightTime.calc();
+        long nowTime = (now()-midnight)/1000;
+        long fromTime = nowTime - steps5Min * 5 * 60;
 
         IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
         List<BgReading> bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
 
-        bgCurve = null;
+        bgCurve2 = null;
+        bgFitCoeff2 = null;
+        bgCurve1 = null;
+        bgFitCoeff1 = null;
         if (bgReadingsArray == null || bgReadingsArray.size() == 0) {
-            return false;
+            return;
         }
 
         BgReading bgr;
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for (int i = 0; i < bgReadingsArray.size(); i++) {
             bgr = bgReadingsArray.get(i);
-            if (bgr.date <= fromTime) continue;
-            int pow = (int)((bgr.date-fromTime) / (60 * 1000 * 5d));
+            long time = (bgr.date-midnight)/1000;
+            if (time <= fromTime) continue;
+            int pow = (int) ((nowTime-time) / (60 * 5d));
             double weight = Math.pow(weightFactor, pow);
-            obs.add(weight, bgr.date, bgr.value);
+            obs.add(weight,time, bgr.value);
         }
         List lObs = obs.toList();
-        if (lObs.size() < 3) return false;
+        if (lObs.size() < 3) return;
 
-        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
-        double[] coeff = fitter.fit(lObs);
+        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+        bgFitCoeff1 = fitter.fit(lObs);
+        bgCurve1 = new PolynomialFunction(bgFitCoeff1);
+        fitter = PolynomialCurveFitter.create(2);
+        bgFitCoeff2 = fitter.fit(lObs);
+        bgCurve2 = new PolynomialFunction(bgFitCoeff2);
+    }
+
+    private boolean checkHypoUsingPolynomalFit() {
+        if(bgCurve2 == null){
+            return false;
+        }
+        double hypoBG = SP.getDouble("low_mark",
+                Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
+        double hypoAlertLevel = Profile.toMgdl( SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
+                ProfileFunctions.getInstance().getProfile().getUnits());
+
+        long midnight = MidnightTime.calc();
+        long horizonSec = 120*60;
+        long nowTime = now();
+        long start = (nowTime-midnight)/1000;
+        long end = (nowTime-midnight)/1000+horizonSec;
 
         // Determine onset and depth of extremum
-        bgCurve = new PolynomialFunction(coeff);
         double topt = 0, t1 = 0, t2 = 0d;
-        double a = coeff[2];
-        double b = coeff[1];
-        double c = coeff[0] - hypoBG;
+        double a = bgFitCoeff2[2];
+        double b = bgFitCoeff2[1];
+        double c = bgFitCoeff2[0] - hypoBG;
         if (a != 0) {
             double d;
             d = Math.pow(b, 2) - 4 * a * c;
             if (d >= 0) {
                 t1 = (-b - Math.sqrt(d)) / (2 * a) ;
                 t2 = (-b + Math.sqrt(d)) / (2 * a) ;
-                if ((t1 >= nowTime && t1 <= nowTime+horizonmSec) || (t2 >= nowTime && t2 <= nowTime+horizonmSec))
+                if ((t1 >= start && t1 <= end) || (t2 >= start && t2 <= end))
                     return true;
                 else
                     return false;
             } else {
                 // not reaching thresholdBG
-                boolean belowThreshold = (bgCurve.value(nowTime) < 0);
+                boolean belowThreshold = (bgCurve2.value(start) < 0);
                 return belowThreshold;
             }
         } else if (b != 0) {
             t1 = -c / b;
-            boolean imminentHypo = (t1 >= nowTime && t1 <= nowTime+horizonmSec);
+            boolean imminentHypo = (t1 >= start && t1 <= end);
             return imminentHypo;
         } else {
             // not reaching thresholdBG
-            boolean belowThreshold = (bgCurve.value(nowTime) < 0);
+            boolean belowThreshold = (bgCurve2.value(start) < 0);
             return belowThreshold;
         }
     }
 
-    public List<BgReading>  getFittedCurve(long fromTime, long toTime) {
-        if (bgCurve == null)
+    public List<BgReading>  getFittedCurve2(long fromTime, long toTime) {
+        if (bgCurve2 == null)
             return null;
 
+        int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
+        long midnight = MidnightTime.calc();
+        long start = Math.max(fromTime-midnight,now()-steps5Min*5*60*1000-midnight)/1000;
+        long end = (toTime -midnight)/1000;
+
         List<BgReading> curve = new ArrayList<>();
-        long start = (now()-120*60*1000);
-        int nSteps = (int) (toTime - start) / ( 60 * 1000);
+        int nSteps = (int) (end - start)/60 ;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.date = start + i *  60 * 1000;
-            bg.value = bgCurve.value(bg.date);
+            bg.date = (start + i *  60)*1000 + midnight;
+            bg.value = bgCurve2.value(start + i *  60);
             curve.add(bg);
         }
 
         return curve;
     }
 
-    private class HypoDetails {
-        private int minutesFromNow;
-        private double lowestBG;
-        private double currentBG;
+    public List<BgReading>  getFittedCurve1(long fromTime, long toTime) {
+        if (bgCurve1 == null)
+            return null;
 
-        protected HypoDetails(int _mfn, double bg, double lBG) {
-            minutesFromNow = _mfn;
-            lowestBG = lBG;
-            currentBG = bg;
+        int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
+        long midnight = MidnightTime.calc();
+        long start = Math.max(fromTime-midnight,now()-steps5Min*5*60*1000-midnight)/1000;
+        long end = (toTime -midnight)/1000;
+
+        List<BgReading> curve = new ArrayList<>();
+        int nSteps = (int) (end - start)/60 ;
+        for (int i = 0; i <= nSteps; i++) {
+            BgReading bg = new BgReading();
+            bg.date = (start + i *  60)*1000 + midnight;
+            bg.value = bgCurve1.value(start + i *  60);
+            curve.add(bg);
         }
 
-        protected double slope() {
-            return (currentBG - lowestBG) / minutesFromNow;
-        }
+        return curve;
     }
 }
