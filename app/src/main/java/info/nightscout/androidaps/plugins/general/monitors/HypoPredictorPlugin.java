@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
@@ -25,7 +26,10 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.aps.loop.APSResult;
+import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
@@ -142,7 +146,8 @@ public class HypoPredictorPlugin extends PluginBase {
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
-                    ev.isChanged(R.string.key_hypoppred_window_from)) {
+                    ev.isChanged(R.string.key_hypoppred_window_from) ||
+                    ev.isChanged(R.string.key_hypoppred_algorithm)) {
 
                 // Sync state with changed preferences
                 executeCheck(0);
@@ -194,8 +199,13 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
+        // Check AAPS BG predictions
+        if(checkAPSPredictions()) {
+            return true;
+        }
+
         // If not check if hypo is expected using polynomal fit
-        if (true /*TODO: preference: use polynomal method?*/) {
+        if (SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
             if( checkHypoUsingPolynomalFit())
                 return true;
         }
@@ -267,6 +277,42 @@ public class HypoPredictorPlugin extends PluginBase {
         timePCLastSatisfied = 0;
     }
 
+    private boolean checkAPSPredictions() {
+        boolean predictionsAvailable;
+        final LoopPlugin.LastRun finalLastRun = LoopPlugin.lastRun;
+
+        final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
+        if (currentProfile == null) {
+            return false;
+        }
+
+        double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
+                , currentProfile.getUnits());
+
+        if (Config.APS)
+            predictionsAvailable = finalLastRun != null && finalLastRun.request.hasPredictions;
+        else if (Config.NSCLIENT)
+            predictionsAvailable = true;
+        else
+            predictionsAvailable = false;
+        APSResult apsResult = null;
+        if (predictionsAvailable) {
+            if (Config.APS)
+                apsResult = finalLastRun.constraintsProcessed;
+            else
+                apsResult = NSDeviceStatus.getAPSResult();
+        }
+        List<BgReading> predictions = apsResult.getPredictions();
+        for (BgReading prediction:predictions
+        ) {
+            //TODO: limit check to curve that is relevant
+            if(prediction.value <= bgThreshold)
+                return true;
+        }
+
+        return false;
+    }
+
     /*
      * Hypo detection algorithm using polynomal fit.
      * */
@@ -325,10 +371,16 @@ public class HypoPredictorPlugin extends PluginBase {
         if(bgCurve2 == null){
             return false;
         }
+
+        final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
+        if (currentProfile == null) {
+            return false;
+        }
+
         double hypoBG = SP.getDouble("low_mark",
                 Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
         double hypoAlertLevel = Profile.toMgdl( SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
-                ProfileFunctions.getInstance().getProfile().getUnits());
+                currentProfile.getUnits());
 
         long midnight = MidnightTime.calc();
         long horizonSec = 120*60;

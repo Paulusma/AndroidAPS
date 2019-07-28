@@ -53,7 +53,14 @@
 
         <PreferenceScreen android:title="@string/hypoppred_algorithm">
 
+            <SwitchPreference
+                android:defaultValue="false"
+                android:key="@string/key_hypoppred_algorithm"
+                android:title="@string/hypoppred_algorithm_title"
+                android:summary="@string/hypoppred_algorithm_summary"/>
+
             <com.andreabaccega.widget.ValidatingEditTextPreference
+                android:dependency="@string/key_hypoppred_algorithm"
                 android:defaultValue="12"
                 android:summary="@string/hypoppred_algorithm_steps_summary"
                 android:digits="0123456789"
@@ -68,6 +75,7 @@
                 validate:testType="numericRange" />
 
             <com.andreabaccega.widget.ValidatingEditTextPreference
+                android:dependency="@string/key_hypoppred_algorithm"
                 android:defaultValue="0.95"
                 android:summary="@string/hypoppred_algorithm_weight_summary"
                 android:inputType="numberDecimal"

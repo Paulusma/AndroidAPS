@@ -1368,6 +1368,9 @@
     <string name="hypoppred_algorithm_weight_summary">Older BG readings weigh less by this factor</string>
     <string name="hypoppred_algorithm_weight">Older BG readings weigh less by this factor</string>
     <string name="key_hypoppred_algorithm_weight">hypoppred_algorithm_weight</string>
+    <string name="key_hypoppred_algorithm">hypoppred_algorithm</string>
+    <string name="hypoppred_algorithm_title">Also use polynomal fit</string>
+    <string name="hypoppred_algorithm_summary">Default the algorithm uses only the future BG values that AndroidAPS calculates.</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
