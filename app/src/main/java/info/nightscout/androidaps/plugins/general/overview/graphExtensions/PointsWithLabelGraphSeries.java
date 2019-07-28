@@ -56,7 +56,7 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
     // Convert the sp to pixels
     Context context = MainApp.instance().getApplicationContext();
     float scaledTextSize = spSize * context.getResources().getDisplayMetrics().scaledDensity;
-    float scaledPxSize = context.getResources().getDisplayMetrics().scaledDensity * 3f;
+    float scaledPxSize = context.getResources().getDisplayMetrics().scaledDensity * 2f;
 
     /**
      * choose a predefined shape to render for

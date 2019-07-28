@@ -420,7 +420,7 @@ public class GraphData {
         actSeriesHist = new FixedLineGraphSeries<>(actData);
         actSeriesHist.setDrawBackground(false);
         actSeriesHist.setColor(MainApp.gc(R.color.activity));
-        actSeriesHist.setThickness(2);
+        actSeriesHist.setThickness(1);
 
         addSeries(actSeriesHist);
 
@@ -430,7 +430,7 @@ public class GraphData {
 
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(2);
+        paint.setStrokeWidth(1);
         paint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
         paint.setColor(MainApp.gc(R.color.activity));
         actSeriesPred.setCustomPaint(paint);
