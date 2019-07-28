@@ -151,8 +151,8 @@ public class HypoPredictorPlugin extends PluginBase {
 
                 // Sync state with changed preferences
                 executeCheck(0);
-            }else if(ev.isChanged(R.string.key_hypoppred_algorithm_steps) ||
-                    ev.isChanged(R.string.key_hypoppred_algorithm_weight)){
+            } else if (ev.isChanged(R.string.key_hypoppred_algorithm_steps) ||
+                    ev.isChanged(R.string.key_hypoppred_algorithm_weight)) {
                 bgPolynomalFit();
             }
         } catch (Exception e) {
@@ -200,13 +200,13 @@ public class HypoPredictorPlugin extends PluginBase {
         }
 
         // Check AAPS BG predictions
-        if(checkAPSPredictions()) {
+        if (checkAPSPredictions()) {
             return true;
         }
 
         // If not check if hypo is expected using polynomal fit
         if (SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
-            if( checkHypoUsingPolynomalFit())
+            if (checkHypoUsingPolynomalFit())
                 return true;
         }
 
@@ -302,12 +302,14 @@ public class HypoPredictorPlugin extends PluginBase {
             else
                 apsResult = NSDeviceStatus.getAPSResult();
         }
-        List<BgReading> predictions = apsResult.getPredictions();
-        for (BgReading prediction:predictions
-        ) {
-            //TODO: limit check to curve that is relevant
-            if(prediction.value <= bgThreshold)
-                return true;
+        if (apsResult != null) {
+            List<BgReading> predictions = apsResult.getPredictions();
+            for (BgReading prediction : predictions
+            ) {
+                //TODO: limit check to curve that is relevant
+                if (prediction.value <= bgThreshold)
+                    return true;
+            }
         }
 
         return false;
@@ -320,6 +322,7 @@ public class HypoPredictorPlugin extends PluginBase {
     private double[] bgFitCoeff1 = null;
     private PolynomialFunction bgCurve2 = null;
     private double[] bgFitCoeff2 = null;
+
     private void bgPolynomalFit() {
         boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
         double weightFactor = SP.getDouble(R.string.key_hypoppred_algorithm_weight, 0.95d);
@@ -332,7 +335,7 @@ public class HypoPredictorPlugin extends PluginBase {
 
         // All times are in sec since midnight
         long midnight = MidnightTime.calc();
-        long nowTime = (now()-midnight)/1000;
+        long nowTime = (now() - midnight) / 1000;
         long fromTime = nowTime - steps5Min * 5 * 60;
 
         IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
@@ -350,11 +353,11 @@ public class HypoPredictorPlugin extends PluginBase {
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for (int i = 0; i < bgReadingsArray.size(); i++) {
             bgr = bgReadingsArray.get(i);
-            long time = (bgr.date-midnight)/1000;
+            long time = (bgr.date - midnight) / 1000;
             if (time <= fromTime) continue;
-            int pow = (int) ((nowTime-time) / (60 * 5d));
+            int pow = (int) ((nowTime - time) / (60 * 5d));
             double weight = Math.pow(weightFactor, pow);
-            obs.add(weight,time, bgr.value);
+            obs.add(weight, time, bgr.value);
         }
         List lObs = obs.toList();
         if (lObs.size() < 3) return;
@@ -368,7 +371,7 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     private boolean checkHypoUsingPolynomalFit() {
-        if(bgCurve2 == null){
+        if (bgCurve2 == null) {
             return false;
         }
 
@@ -379,14 +382,14 @@ public class HypoPredictorPlugin extends PluginBase {
 
         double hypoBG = SP.getDouble("low_mark",
                 Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
-        double hypoAlertLevel = Profile.toMgdl( SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
+        double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
                 currentProfile.getUnits());
 
         long midnight = MidnightTime.calc();
-        long horizonSec = 120*60;
+        long horizonSec = 120 * 60;
         long nowTime = now();
-        long start = (nowTime-midnight)/1000;
-        long end = (nowTime-midnight)/1000+horizonSec;
+        long start = (nowTime - midnight) / 1000;
+        long end = (nowTime - midnight) / 1000 + horizonSec;
 
         // Determine onset and depth of extremum
         double topt = 0, t1 = 0, t2 = 0d;
@@ -397,8 +400,8 @@ public class HypoPredictorPlugin extends PluginBase {
             double d;
             d = Math.pow(b, 2) - 4 * a * c;
             if (d >= 0) {
-                t1 = (-b - Math.sqrt(d)) / (2 * a) ;
-                t2 = (-b + Math.sqrt(d)) / (2 * a) ;
+                t1 = (-b - Math.sqrt(d)) / (2 * a);
+                t2 = (-b + Math.sqrt(d)) / (2 * a);
                 if ((t1 >= start && t1 <= end) || (t2 >= start && t2 <= end))
                     return true;
                 else
@@ -419,42 +422,42 @@ public class HypoPredictorPlugin extends PluginBase {
         }
     }
 
-    public List<BgReading>  getFittedCurve2(long fromTime, long toTime) {
+    public List<BgReading> getFittedCurve2(long fromTime, long toTime) {
         if (bgCurve2 == null)
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
         long midnight = MidnightTime.calc();
-        long start = Math.max(fromTime-midnight,now()-steps5Min*5*60*1000-midnight)/1000;
-        long end = (toTime -midnight)/1000;
+        long start = Math.max(fromTime - midnight, now() - steps5Min * 5 * 60 * 1000 - midnight) / 1000;
+        long end = (toTime - midnight) / 1000;
 
         List<BgReading> curve = new ArrayList<>();
-        int nSteps = (int) (end - start)/60 ;
+        int nSteps = (int) (end - start) / 60;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.date = (start + i *  60)*1000 + midnight;
-            bg.value = bgCurve2.value(start + i *  60);
+            bg.date = (start + i * 60) * 1000 + midnight;
+            bg.value = bgCurve2.value(start + i * 60);
             curve.add(bg);
         }
 
         return curve;
     }
 
-    public List<BgReading>  getFittedCurve1(long fromTime, long toTime) {
+    public List<BgReading> getFittedCurve1(long fromTime, long toTime) {
         if (bgCurve1 == null)
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
         long midnight = MidnightTime.calc();
-        long start = Math.max(fromTime-midnight,now()-steps5Min*5*60*1000-midnight)/1000;
-        long end = (toTime -midnight)/1000;
+        long start = Math.max(fromTime - midnight, now() - steps5Min * 5 * 60 * 1000 - midnight) / 1000;
+        long end = (toTime - midnight) / 1000;
 
         List<BgReading> curve = new ArrayList<>();
-        int nSteps = (int) (end - start)/60 ;
+        int nSteps = (int) (end - start) / 60;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.date = (start + i *  60)*1000 + midnight;
-            bg.value = bgCurve1.value(start + i *  60);
+            bg.date = (start + i * 60) * 1000 + midnight;
+            bg.value = bgCurve1.value(start + i * 60);
             curve.add(bg);
         }
 
