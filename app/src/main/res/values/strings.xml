@@ -1371,6 +1371,8 @@
     <string name="key_hypoppred_algorithm">hypoppred_algorithm</string>
     <string name="hypoppred_algorithm_title">Also use polynomal fit</string>
     <string name="hypoppred_algorithm_summary">Default the algorithm uses only the future BG values that AndroidAPS calculates.</string>
+    <string name="key_scale_insulin_activity">scale_insulin_activity</string>
+    <string name="scale_insulin_activity">Scal insulin activity on overview charts</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
