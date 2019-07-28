@@ -14,6 +14,7 @@ import java.util.List;
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.DatabaseHelper;
@@ -32,6 +33,7 @@ import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.DefaultValueHelper;
@@ -78,11 +80,13 @@ public class HypoPredictorPlugin extends PluginBase {
         super.onStart();
 
         // Check after AndroidAPS restart if we had a TT running and sync with that
-        synchronized (this) {
-            TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
-            if (currentTarget != null && currentTarget.reason.equals(MainApp.gs(R.string.hypo_detection))) {
-                runningHypoTT = currentTarget;
-                timePCLastSatisfied = now();
+        if (isEnabled(PluginType.GENERAL)) {
+            synchronized (this) {
+                TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
+                if (currentTarget != null && currentTarget.reason.equals(MainApp.gs(R.string.hypo_detection))) {
+                    runningHypoTT = currentTarget;
+                    timePCLastSatisfied = now();
+                }
             }
         }
     }
@@ -96,6 +100,8 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventNewBG(final EventNewBG ev) {
+        if (!isEnabled(PluginType.GENERAL))
+            return;
         try {
             if (this != getPlugin()) {
                 if (L.isEnabled(L.AUTOSENS))
@@ -114,6 +120,8 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
+        if (!isEnabled(PluginType.GENERAL))
+            return;
         try {
             if (this != getPlugin()) {
                 if (L.isEnabled(L.AUTOSENS))
@@ -142,18 +150,22 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
+        if (!isEnabled(PluginType.GENERAL))
+            return;
         try {
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
                     ev.isChanged(R.string.key_hypoppred_window_from) ||
-                    ev.isChanged(R.string.key_hypoppred_algorithm)) {
+                    ev.isChanged(R.string.key_hypoppred_algorithm) ||
+                    ev.isChanged(R.string.key_hypoppred_algorithm_horizon)) {
 
                 // Sync state with changed preferences
                 executeCheck(0);
             } else if (ev.isChanged(R.string.key_hypoppred_algorithm_steps) ||
-                    ev.isChanged(R.string.key_hypoppred_algorithm_weight)) {
+                    ev.isChanged(R.string.key_hypoppred_algorithm_weight) ) {
                 bgPolynomalFit();
+                executeCheck(0);
             }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -197,6 +209,21 @@ public class HypoPredictorPlugin extends PluginBase {
         final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
         if (currentProfile == null) {
             return false;
+        }
+
+        // Do not check if 'eating soon' is active
+        TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
+        if (currentTarget != null && MainApp.gs(R.string.eatingsoon).equals(currentTarget.reason))
+            return false;
+
+        // Do not check if there are carbs scheduled within the next hour
+        List<Treatment>  treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+        for (Treatment treatment:treatments){
+            if(treatment.isValid
+                    && (treatment.date > now() && treatment.date < now()+60*60*1000)
+                    && treatment.carbs > 0 ){
+                return false;
+            }
         }
 
         // Check AAPS BG predictions
@@ -250,15 +277,16 @@ public class HypoPredictorPlugin extends PluginBase {
 
     private void endHypoTT(boolean wait15Min) {
         if (wait15Min) {
-            if (now() < timePCLastSatisfied + 15 * 60 * 1000)
-                return;
+ // TODO: nu niet ivm testen andere zaken
+            //  if (now() < timePCLastSatisfied + 15 * 60 * 1000)
+ //               return;
 
             if (previousTT != null && previousTT.isInProgress()) {
                 // Previous TT would still be in progress so let it run for the remainder of its original duration
                 int minutesRemaining = (int) (previousTT.end() - now()) / 60 / 1000;
                 previousTT.date(DateUtil.roundDateToSec(now()))
                         .duration(minutesRemaining)
-                        .reason(previousTT.reason + " (continued)");
+                        .reason(previousTT.reason + R.string.hypopred_continued);
                 TreatmentsPlugin.getPlugin().addToHistoryTempTarget(previousTT);
             } else {
                 TempTarget tempTT = new TempTarget()
@@ -280,6 +308,8 @@ public class HypoPredictorPlugin extends PluginBase {
     private boolean checkAPSPredictions() {
         boolean predictionsAvailable;
         final LoopPlugin.LastRun finalLastRun = LoopPlugin.lastRun;
+
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
 
         final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
         if (currentProfile == null) {
@@ -303,13 +333,26 @@ public class HypoPredictorPlugin extends PluginBase {
                 apsResult = NSDeviceStatus.getAPSResult();
         }
         if (apsResult != null) {
+            boolean noCarbsOnBoard = true;
+            boolean iobLow = false;
             List<BgReading> predictions = apsResult.getPredictions();
             for (BgReading prediction : predictions
             ) {
-                //TODO: limit check to curve that is relevant
-                if (prediction.value <= bgThreshold)
-                    return true;
+                noCarbsOnBoard = noCarbsOnBoard && !prediction.isCOBPrediction
+                        && !prediction.isaCOBPrediction && !prediction.isUAMPrediction;
+                if (prediction.value <= bgThreshold
+                        && prediction.date < now() + hypoHorizon * 60 * 1000){
+
+                    if(!prediction.isIOBPrediction)
+                        return true;
+                    else
+                        iobLow = true;
+                }
             }
+
+            // IOB only reliable if no cargs on board, ie if COB not calculated
+            if(iobLow && noCarbsOnBoard)
+                return true;
         }
 
         return false;
@@ -380,13 +423,14 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
-        double hypoBG = SP.getDouble("low_mark",
+        double hypoBG = SP.getDouble(R.string.low_mark,
                 Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
                 currentProfile.getUnits());
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
 
         long midnight = MidnightTime.calc();
-        long horizonSec = 120 * 60;
+        long horizonSec = hypoHorizon * 60;
         long nowTime = now();
         long start = (nowTime - midnight) / 1000;
         long end = (nowTime - midnight) / 1000 + horizonSec;
@@ -423,7 +467,7 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     public List<BgReading> getFittedCurve2(long fromTime, long toTime) {
-        if (bgCurve2 == null)
+        if (bgCurve2 == null || !isEnabled(PluginType.GENERAL))
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
@@ -444,7 +488,7 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     public List<BgReading> getFittedCurve1(long fromTime, long toTime) {
-        if (bgCurve1 == null)
+        if (bgCurve1 == null || !isEnabled(PluginType.GENERAL))
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);

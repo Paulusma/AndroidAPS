@@ -62,6 +62,21 @@
             <com.andreabaccega.widget.ValidatingEditTextPreference
                 android:dependency="@string/key_hypoppred_algorithm"
                 android:defaultValue="12"
+                android:summary="@string/hypoppred_algorithm_horizon_summary"
+                android:digits="0123456789"
+                android:inputType="number"
+                android:key="@string/key_hypoppred_algorithm_horizon"
+                android:maxLines="1"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/hypoppred_algorithm_horizon"
+                validate:maxNumber="120"
+                validate:minNumber="20"
+                validate:testType="numericRange" />
+
+            <com.andreabaccega.widget.ValidatingEditTextPreference
+                android:dependency="@string/key_hypoppred_algorithm"
+                android:defaultValue="12"
                 android:summary="@string/hypoppred_algorithm_steps_summary"
                 android:digits="0123456789"
                 android:inputType="number"
