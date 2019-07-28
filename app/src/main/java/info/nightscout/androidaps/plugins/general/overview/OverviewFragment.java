@@ -1424,11 +1424,15 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 int predHours = (int) (Math.ceil(apsResult.getLatestPredictionsTime() - System.currentTimeMillis()) / (60 * 60 * 1000));
                 predHours = Math.min(2, predHours);
                 predHours = Math.max(0, predHours);
+                if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
+                        SP.getBoolean(R.string.key_hypoppred_algorithm, false))
+                    predHours = 2;
                 hoursToFetch = rangeToDisplay - predHours;
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
                 fromTime = toTime - T.hours(hoursToFetch).msecs();
                 endTime = toTime + T.hours(predHours).msecs();
-            } else if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
+            } else if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
+                SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
                 int predHours = 2;
                 hoursToFetch = rangeToDisplay - predHours;
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
@@ -1460,7 +1464,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             } else
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
 
-            if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL)){// TODO: en verder: && SP.getBoolean("showprediction", false))
+            if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
+                    SP.getBoolean(R.string.key_hypoppred_algorithm, false)){// TODO: en verder: && SP.getBoolean("showprediction", false))
                 graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve1(fromTime, endTime), lowLine, highLine);
                 graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve2(fromTime, endTime), lowLine, highLine);
             }
