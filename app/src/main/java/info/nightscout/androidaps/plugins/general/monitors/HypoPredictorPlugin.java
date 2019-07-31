@@ -14,7 +14,6 @@ import java.util.List;
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.DatabaseHelper;
@@ -37,7 +36,6 @@ import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.DefaultValueHelper;
-import info.nightscout.androidaps.utils.MidnightTime;
 import info.nightscout.androidaps.utils.SP;
 
 import static info.nightscout.androidaps.utils.DateUtil.now;
@@ -109,7 +107,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 return;
             }
             if (ev.bgReading != null) {
-                bgPolynomalFit();
+                fitBGCurve();
                 executeCheck(ev.bgReading.value);
             }
         } catch (Exception e) {
@@ -163,8 +161,8 @@ public class HypoPredictorPlugin extends PluginBase {
                 // Sync state with changed preferences
                 executeCheck(0);
             } else if (ev.isChanged(R.string.key_hypoppred_algorithm_steps) ||
-                    ev.isChanged(R.string.key_hypoppred_algorithm_weight) ) {
-                bgPolynomalFit();
+                    ev.isChanged(R.string.key_hypoppred_algorithm_weight)) {
+                fitBGCurve();
                 executeCheck(0);
             }
         } catch (Exception e) {
@@ -217,11 +215,11 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
 
         // Do not check if there are carbs scheduled within the next hour
-        List<Treatment>  treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
-        for (Treatment treatment:treatments){
-            if(treatment.isValid
-                    && (treatment.date > now() && treatment.date < now()+60*60*1000)
-                    && treatment.carbs > 0 ){
+        List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+        for (Treatment treatment : treatments) {
+            if (treatment.isValid
+                    && (treatment.date > now() && treatment.date < now() + 60 * 60 * 1000)
+                    && treatment.carbs > 0) {
                 return false;
             }
         }
@@ -233,7 +231,7 @@ public class HypoPredictorPlugin extends PluginBase {
 
         // If not check if hypo is expected using polynomal fit
         if (SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
-            if (checkHypoUsingPolynomalFit())
+            if (checkHypoUsingBGCurveFit())
                 return true;
         }
 
@@ -277,9 +275,9 @@ public class HypoPredictorPlugin extends PluginBase {
 
     private void endHypoTT(boolean wait15Min) {
         if (wait15Min) {
- // TODO: nu niet ivm testen andere zaken
+            // TODO: is a 15min wait befor cancelling running hypo TT really usefull?
             //  if (now() < timePCLastSatisfied + 15 * 60 * 1000)
- //               return;
+            //               return;
 
             if (previousTT != null && previousTT.isInProgress()) {
                 // Previous TT would still be in progress so let it run for the remainder of its original duration
@@ -316,8 +314,7 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
-        double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
-                , currentProfile.getUnits());
+        double bgThreshold = OverviewPlugin.bgTargetLow;
 
         if (Config.APS)
             predictionsAvailable = finalLastRun != null && finalLastRun.request.hasPredictions;
@@ -341,9 +338,9 @@ public class HypoPredictorPlugin extends PluginBase {
                 noCarbsOnBoard = noCarbsOnBoard && !prediction.isCOBPrediction
                         && !prediction.isaCOBPrediction && !prediction.isUAMPrediction;
                 if (prediction.value <= bgThreshold
-                        && prediction.date < now() + hypoHorizon * 60 * 1000){
+                        && prediction.date < now() + hypoHorizon * 60 * 1000) {
 
-                    if(!prediction.isIOBPrediction)
+                    if (!prediction.isIOBPrediction)
                         return true;
                     else
                         iobLow = true;
@@ -351,7 +348,7 @@ public class HypoPredictorPlugin extends PluginBase {
             }
 
             // IOB only reliable if no cargs on board, ie if COB not calculated
-            if(iobLow && noCarbsOnBoard)
+            if (iobLow && noCarbsOnBoard)
                 return true;
         }
 
@@ -359,14 +356,11 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     /*
-     * Hypo detection algorithm using polynomal fit.
+     * Hypo detection algorithm using curve fitting
      * */
-    private PolynomialFunction bgCurve1 = null;
-    private double[] bgFitCoeff1 = null;
-    private PolynomialFunction bgCurve2 = null;
-    private double[] bgFitCoeff2 = null;
+    private long gcCurveOffset = 0;
 
-    private void bgPolynomalFit() {
+    private void fitBGCurve() {
         boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
         double weightFactor = SP.getDouble(R.string.key_hypoppred_algorithm_weight, 0.95d);
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
@@ -376,45 +370,44 @@ public class HypoPredictorPlugin extends PluginBase {
         long timeMinBG = 0;
         double minBgValue = Double.MIN_VALUE;
 
-        // All times are in sec since midnight
-        long midnight = MidnightTime.calc();
-        long nowTime = (now() - midnight) / 1000;
-        long fromTime = nowTime - steps5Min * 5 * 60;
-
         IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
         List<BgReading> bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
 
-        bgCurve2 = null;
-        bgFitCoeff2 = null;
-        bgCurve1 = null;
-        bgFitCoeff1 = null;
         if (bgReadingsArray == null || bgReadingsArray.size() == 0) {
             return;
         }
+
+        // All times are in secs relative to calculation (=current) time
+        gcCurveOffset = now()/1000;
+        long start = - steps5Min * 5 * 60;
 
         BgReading bgr;
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for (int i = 0; i < bgReadingsArray.size(); i++) {
             bgr = bgReadingsArray.get(i);
-            long time = (bgr.date - midnight) / 1000;
-            if (time <= fromTime) continue;
-            int pow = (int) ((nowTime - time) / (60 * 5d));
+            long time = bgr.date/1000 - gcCurveOffset;
+            if (time <= start) continue;
+            int pow = (int) (- time / (60 * 5d));
             double weight = Math.pow(weightFactor, pow);
             obs.add(weight, time, bgr.value);
         }
         List lObs = obs.toList();
         if (lObs.size() < 3) return;
 
-        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-        bgFitCoeff1 = fitter.fit(lObs);
-        bgCurve1 = new PolynomialFunction(bgFitCoeff1);
-        fitter = PolynomialCurveFitter.create(2);
-        bgFitCoeff2 = fitter.fit(lObs);
-        bgCurve2 = new PolynomialFunction(bgFitCoeff2);
+        polynomalFit(lObs);
+    //    glucoseCurveFit(lObs);
     }
 
-    private boolean checkHypoUsingPolynomalFit() {
-        if (bgCurve2 == null) {
+    private PolynomialFunction gcPolyCurve = null;
+    private double[] gcPolyCoeff = null;
+    private void polynomalFit(List lObs){
+        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+        gcPolyCoeff = fitter.fit(lObs);
+        gcPolyCurve = new PolynomialFunction(gcPolyCoeff);
+    }
+
+    private boolean checkHypoUsingBGCurveFit() {
+        if (gcPolyCurve == null) {
             return false;
         }
 
@@ -423,85 +416,99 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
-        double hypoBG = SP.getDouble(R.string.low_mark,
-                Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
+        double hypoBG = OverviewPlugin.bgTargetLow;
+        //Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
                 currentProfile.getUnits());
         int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
 
-        long midnight = MidnightTime.calc();
         long horizonSec = hypoHorizon * 60;
-        long nowTime = now();
-        long start = (nowTime - midnight) / 1000;
-        long end = (nowTime - midnight) / 1000 + horizonSec;
 
-        // Determine onset and depth of extremum
-        double topt = 0, t1 = 0, t2 = 0d;
-        double a = bgFitCoeff2[2];
-        double b = bgFitCoeff2[1];
-        double c = bgFitCoeff2[0] - hypoBG;
+        // Determine intersection with LOW line
+        double a = gcPolyCoeff[1];
+        double b = gcPolyCoeff[0] - hypoBG;
         if (a != 0) {
-            double d;
-            d = Math.pow(b, 2) - 4 * a * c;
-            if (d >= 0) {
-                t1 = (-b - Math.sqrt(d)) / (2 * a);
-                t2 = (-b + Math.sqrt(d)) / (2 * a);
-                if ((t1 >= start && t1 <= end) || (t2 >= start && t2 <= end))
-                    return true;
-                else
-                    return false;
-            } else {
-                // not reaching thresholdBG
-                boolean belowThreshold = (bgCurve2.value(start) < 0);
-                return belowThreshold;
-            }
-        } else if (b != 0) {
-            t1 = -c / b;
-            boolean imminentHypo = (t1 >= start && t1 <= end);
+            double t1 = -b / a;
+            boolean imminentHypo = (t1 >= 0 && t1 <= horizonSec);
             return imminentHypo;
         } else {
             // not reaching thresholdBG
-            boolean belowThreshold = (bgCurve2.value(start) < 0);
+            boolean belowThreshold = (gcPolyCurve.value(0) < 0);
             return belowThreshold;
         }
     }
 
-    public List<BgReading> getFittedCurve2(long fromTime, long toTime) {
-        if (bgCurve2 == null || !isEnabled(PluginType.GENERAL))
+    public List<BgReading> getFittedPolyCurve(long fromTime, long toTime) {
+        if (gcPolyCurve == null || !isEnabled(PluginType.GENERAL))
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
-        long midnight = MidnightTime.calc();
-        long start = Math.max(fromTime - midnight, now() - steps5Min * 5 * 60 * 1000 - midnight) / 1000;
-        long end = (toTime - midnight) / 1000;
+        long start = Math.max(fromTime/1000 - gcCurveOffset, now()/1000 - gcCurveOffset - (steps5Min+6) * 5 * 60 );
+        long end = toTime/1000 - gcCurveOffset;
 
         List<BgReading> curve = new ArrayList<>();
         int nSteps = (int) (end - start) / 60;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.date = (start + i * 60) * 1000 + midnight;
-            bg.value = bgCurve2.value(start + i * 60);
+            bg.date = (start + i * 60) * 1000 + gcCurveOffset*1000;
+            bg.value = gcPolyCurve.value(start + i * 60);
             curve.add(bg);
         }
 
         return curve;
     }
 
-    public List<BgReading> getFittedCurve1(long fromTime, long toTime) {
-        if (bgCurve1 == null || !isEnabled(PluginType.GENERAL))
+    private BaseGlucoseCurve gcCurve = null;
+    private double[] gcCurveParameters = null;
+    private void glucoseCurveFit(List lObs) {
+        double[] initialGuess = {1.0,1.0,1.0};
+
+        GlucoseCurveFitter fitter = new GlucoseCurveFitter(initialGuess);
+        gcCurveParameters = fitter.fit(lObs);
+    }
+
+    private boolean checkHypoUsingGlucoseGCurveFit() {
+        if (gcCurve == null) {
+            return false;
+        }
+
+        final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
+        if (currentProfile == null) {
+            return false;
+        }
+
+        double hypoBG = OverviewPlugin.bgTargetLow;
+        //Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
+        double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
+                currentProfile.getUnits());
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
+
+        long horizonSec = hypoHorizon * 60;
+
+        // Determine intersection with LOW line
+        long lowTime = determineLowTime(getFittedGlucoseCurve(0,horizonSec));
+        return (lowTime >= 0 && lowTime <= horizonSec);
+    }
+
+    private long determineLowTime(List<BgReading> fittedGlucoseCurve) {
+        //TODO
+        return 0;
+    }
+
+    public List<BgReading> getFittedGlucoseCurve(long fromTime, long toTime) {
+        if (gcCurve == null || !isEnabled(PluginType.GENERAL))
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
-        long midnight = MidnightTime.calc();
-        long start = Math.max(fromTime - midnight, now() - steps5Min * 5 * 60 * 1000 - midnight) / 1000;
-        long end = (toTime - midnight) / 1000;
+        long start = Math.max(fromTime/1000 - gcCurveOffset, now()/1000 - gcCurveOffset - (steps5Min+6) * 5 * 60 );
+        long end = toTime/1000 - gcCurveOffset;
 
         List<BgReading> curve = new ArrayList<>();
         int nSteps = (int) (end - start) / 60;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
-            bg.date = (start + i * 60) * 1000 + midnight;
-            bg.value = bgCurve1.value(start + i * 60);
+            bg.date = (start + i * 60) * 1000 + gcCurveOffset*1000;
+            bg.value = gcCurve.value(start + i * 60);
             curve.add(bg);
         }
 

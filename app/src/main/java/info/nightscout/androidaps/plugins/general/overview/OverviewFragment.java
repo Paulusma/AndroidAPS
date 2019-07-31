@@ -1477,8 +1477,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
                     SP.getBoolean(R.string.key_hypoppred_algorithm, false)){// TODO: en verder: && SP.getBoolean("showprediction", false))
-                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve1(fromTime, endTime), lowLine, highLine);
-                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedCurve2(fromTime, endTime), lowLine, highLine);
+                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedPolyCurve(fromTime, endTime), lowLine, highLine);
             }
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, endTime);
