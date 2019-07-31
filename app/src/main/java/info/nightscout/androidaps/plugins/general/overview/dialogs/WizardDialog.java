@@ -266,7 +266,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         editCarbs.setParams(mealCarbs, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
         double bolusstep = ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep;
         editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
-        editCarbTime.setParams(0d, -60d, 60d, 5d, new DecimalFormat("0"), false);
+        editCarbTime.setParams(0d, -60d, 60d, 5d, new DecimalFormat("0"), false, textWatcher);
         notesEdit.setText(meal);
         initDialog();
 
