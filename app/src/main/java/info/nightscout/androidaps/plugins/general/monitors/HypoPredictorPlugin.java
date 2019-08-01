@@ -156,7 +156,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
                     ev.isChanged(R.string.key_hypoppred_window_from) ||
                     ev.isChanged(R.string.key_hypoppred_algorithm) ||
-                    ev.isChanged(R.string.key_hypoppred_algorithm_horizon)) {
+                    ev.isChanged(R.string.key_hypoppred_horizon)) {
 
                 // Sync state with changed preferences
                 executeCheck(0);
@@ -273,11 +273,11 @@ public class HypoPredictorPlugin extends PluginBase {
         TreatmentsPlugin.getPlugin().addToHistoryTempTarget(runningHypoTT);
     }
 
-    private void endHypoTT(boolean wait15Min) {
-        if (wait15Min) {
-            // TODO: is a 15min wait befor cancelling running hypo TT really usefull?
-            //  if (now() < timePCLastSatisfied + 15 * 60 * 1000)
-            //               return;
+    private void endHypoTT(boolean wait) {
+        if (wait) {
+            long waitTimeMins = SP.getLong(R.string.key_hypoppred_waittime, 0L);
+            if (now() < timePCLastSatisfied + waitTimeMins * 60 * 1000)
+                return;
 
             if (previousTT != null && previousTT.isInProgress()) {
                 // Previous TT would still be in progress so let it run for the remainder of its original duration
@@ -307,7 +307,7 @@ public class HypoPredictorPlugin extends PluginBase {
         boolean predictionsAvailable;
         final LoopPlugin.LastRun finalLastRun = LoopPlugin.lastRun;
 
-        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_horizon, 60);
 
         final Profile currentProfile = ProfileFunctions.getInstance().getProfile();
         if (currentProfile == null) {
@@ -420,7 +420,7 @@ public class HypoPredictorPlugin extends PluginBase {
         //Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
                 currentProfile.getUnits());
-        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_horizon, 60);
 
         long horizonSec = hypoHorizon * 60;
 
@@ -481,7 +481,7 @@ public class HypoPredictorPlugin extends PluginBase {
         //Profile.fromMgdlToUnits(OverviewPlugin.bgTargetLow, ProfileFunctions.getInstance().getProfileUnits()));
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
                 currentProfile.getUnits());
-        int hypoHorizon = SP.getInt(R.string.key_hypoppred_algorithm_horizon, 60);
+        int hypoHorizon = SP.getInt(R.string.key_hypoppred_horizon, 60);
 
         long horizonSec = hypoHorizon * 60;
 

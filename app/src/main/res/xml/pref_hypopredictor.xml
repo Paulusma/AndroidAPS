@@ -28,29 +28,32 @@
             />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="0.0"
-            android:summary="@string/hypoppred_threshold_bg_summary"
-            android:inputType="numberDecimal"
-            android:key="@string/key_hypoppred_threshold_bg"
+            android:defaultValue="12"
+            android:summary="@string/hypoppred_horizon_summary"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="@string/key_hypoppred_horizon"
             android:maxLines="1"
             android:selectAllOnFocus="true"
             android:singleLine="true"
-            android:title="@string/hypoppred_threshold_bg"
-            validate:floatminNumber="0.0"
-            validate:testType="floatNumericRange" />
+            android:title="@string/hypoppred_horizon"
+            validate:maxNumber="120"
+            validate:minNumber="20"
+            validate:testType="numericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="0.0"
-            android:summary="@string/hypoppred_threshold_alert_summary"
-            android:inputType="numberDecimal"
-            android:key="@string/key_hypoppred_threshold_alert"
+            android:defaultValue="15"
+            android:summary="@string/hypoppred_waittime_summary"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="@string/key_hypoppred_waittime"
             android:maxLines="1"
             android:selectAllOnFocus="true"
             android:singleLine="true"
-            android:title="@string/hypoppred_threshold_alert"
-            validate:floatminNumber="0.0"
-            validate:testType="floatNumericRange" />
-
+            android:title="@string/hypoppred_waittime"
+            validate:maxNumber="120"
+            validate:minNumber="20"
+            validate:testType="numericRange" />
         <PreferenceScreen android:title="@string/hypoppred_algorithm">
 
             <SwitchPreference
@@ -58,21 +61,6 @@
                 android:key="@string/key_hypoppred_algorithm"
                 android:title="@string/hypoppred_algorithm_title"
                 android:summary="@string/hypoppred_algorithm_summary"/>
-
-            <com.andreabaccega.widget.ValidatingEditTextPreference
-                android:dependency="@string/key_hypoppred_algorithm"
-                android:defaultValue="12"
-                android:summary="@string/hypoppred_algorithm_horizon_summary"
-                android:digits="0123456789"
-                android:inputType="number"
-                android:key="@string/key_hypoppred_algorithm_horizon"
-                android:maxLines="1"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:title="@string/hypoppred_algorithm_horizon"
-                validate:maxNumber="120"
-                validate:minNumber="20"
-                validate:testType="numericRange" />
 
             <com.andreabaccega.widget.ValidatingEditTextPreference
                 android:dependency="@string/key_hypoppred_algorithm"
@@ -104,6 +92,30 @@
                 validate:testType="floatNumericRange" />
 
         </PreferenceScreen>
+        
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="0.0"
+            android:summary="@string/hypoppred_threshold_bg_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_hypoppred_threshold_bg"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_threshold_bg"
+            validate:floatminNumber="0.0"
+            validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="0.0"
+            android:summary="@string/hypoppred_threshold_alert_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_hypoppred_threshold_alert"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_threshold_alert"
+            validate:floatminNumber="0.0"
+            validate:testType="floatNumericRange" />
 
     </PreferenceCategory>
 </PreferenceScreen>

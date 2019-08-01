@@ -1369,14 +1369,17 @@
     <string name="hypoppred_algorithm_weight">Older BG readings weigh less by this factor</string>
     <string name="key_hypoppred_algorithm_weight">hypoppred_algorithm_weight</string>
     <string name="key_hypoppred_algorithm">hypoppred_algorithm</string>
-    <string name="hypoppred_algorithm_title">Also use polynomal fit</string>
-    <string name="hypoppred_algorithm_summary">Default the algorithm uses only the future BG values that AndroidAPS calculates.</string>
+    <string name="hypoppred_algorithm_title">Include independent prediction based on observed BG only.</string>
+    <string name="hypoppred_algorithm_summary">As a default predicted BG values (IOB, COB, UAM, &#8230;) are used to find hypo\'s. Looking at only the observed BG\'s allows a prediction independent of the inner workings of AndroidAPS.</string>
     <string name="key_scale_insulin_activity">scale_insulin_activity</string>
-    <string name="scale_insulin_activity">Scal insulin activity on overview charts</string>
-    <string name="key_hypoppred_algorithm_horizon">hypoppred_algorithm_horizon</string>
-    <string name="hypoppred_algorithm_horizon">Size hypo detection window (min)</string>
-    <string name="hypoppred_algorithm_horizon_summary">Size hypo detection window (min)</string>
+    <string name="scale_insulin_activity">Scale of insulin activity on overview charts</string>
+    <string name="key_hypoppred_horizon">hypoppred_algorithm_horizon</string>
+    <string name="hypoppred_horizon">How far to look in the future for a hypo (min)</string>
+    <string name="hypoppred_horizon_summary">Size hypo detection window (min)</string>
     <string name="hypopred_continued">\" (continued)\"</string>
+    <string name="key_hypoppred_waittime">hypoppred_waittime</string>
+    <string name="hypoppred_waittime_summary">Time TT remains running after hypo prediction has ended (mins)</string>
+    <string name="hypoppred_waittime">Time TT continues running when hypo no longer detected (mins)</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
