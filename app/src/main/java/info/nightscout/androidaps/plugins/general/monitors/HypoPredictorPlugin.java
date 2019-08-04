@@ -128,50 +128,7 @@ public class HypoPredictorPlugin extends PluginBase {
             log.error("Unhandled exception", e);
         }
     }
-/* Converting preferences on profileswitch can lead to strange behavior.
-    @Subscribe
-    @SuppressWarnings("unused")
-    public void onStatusEvent(final EventReloadProfileSwitchData ev) {
-        if (currentProfile == null) {
-            currentProfile = ProfileFunctions.getInstance().getProfile();
-            return;
-        }
 
-        String oldUnits = currentProfile.getUnits();
-        currentProfile = ProfileFunctions.getInstance().getProfile();
-
-        if (currentProfile == null)
-            return;
-
-        String newUnits = currentProfile.getUnits();
-        if (!oldUnits.equals(newUnits))
-            convertUnits(oldUnits.equals("mmol"));
-    }
-
-    // Update preferences from mmol/l <=> mg/dl
-    private void convertUnits(boolean toMgdl) {
-        double bgv;
-        if (toMgdl) {
-            // convert mmol/l -> mg/dl
-            bgToMgdl(R.string.key_hypoppred_threshold_bg);
-            bgToMgdl(R.string.key_hypoppred_threshold_alert);
-            bgToMgdl(R.string.key_hypoppred_TT_bg);
-        } else {
-            // convert mg/dl -> mmol/l
-            bgToMmol(R.string.key_hypoppred_threshold_bg);
-            bgToMmol(R.string.key_hypoppred_threshold_alert);
-            bgToMmol(R.string.key_hypoppred_TT_bg);
-        }
-    }
-
-    private void bgToMgdl(int bgvID) {
-        SP.putDouble(bgvID, SP.getDouble(bgvID, 0d)* Constants.MMOLL_TO_MGDL);
-    }
-
-    private void bgToMmol(int bgvID) {
-        SP.putDouble(bgvID, SP.getDouble(bgvID, 0d)* Constants.MGDL_TO_MMOLL);
-    }
-*/
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTreatmentChange(final EventTreatmentChange ev) {
