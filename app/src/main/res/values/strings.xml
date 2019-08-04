@@ -1340,7 +1340,6 @@
     <string name="description_hypoppred">Tries to detect impending hypo\'s and take corrective measures (start hypo TT) to prevent them.</string>
     <string name="hypoppred_shortname">hpp</string>
     <string name="hypoppred">Early hypo detection and prevention</string>
-    <string name="key_hypoppred_bglow">hypoppred_bglow</string>
     <string name="hypoppred_settings">Detection and prevention of impending hypo\'s</string>
     <string name="hypoppred_24hwindow_title">Set time frame</string>
     <string name="hypoppred_24hwindow_summary">Default hypo prevention is active all day. This can be limited to a specific period by setting a time frame.</string>
@@ -1358,8 +1357,8 @@
     <string name="key_hypoppred_fitter_steps">hypoppred_fitter_steps</string>
     <string name="key_hypoppred_fitter_weight">hypoppred_fitter_weight</string>
     <string name="key_hypoppred_alertlevel">hypoppred_alertlevel</string>
-    <string name="hypoppred_threshold_alert_summary">Generate an alert when BG value drops below this level</string>
-    <string name="hypoppred_threshold_alert">Generate an alert when BG value drops below this level</string>
+    <string name="hypoppred_threshold_alert_summary">Sound alarm when BG value drops below this level</string>
+    <string name="hypoppred_threshold_alert">Sound alarm when BG value drops below this level</string>
     <string name="key_hypoppred_threshold_alert">hypoppred_threshold_alert</string>
     <string name="hypoppred_algorithm">Prediction algorithm</string>
     <string name="hypoppred_algorithm_steps_summary">Number of previous BG readings to base prediction on</string>
@@ -1380,6 +1379,10 @@
     <string name="key_hypoppred_waittime">hypoppred_waittime</string>
     <string name="hypoppred_waittime_summary">Time TT remains running after hypo prediction has ended (mins)</string>
     <string name="hypoppred_waittime">Time TT continues running when hypo no longer detected (mins)</string>
+    <string name="hypoppred_alert_msg">Hypo in %1$d mins, advice %2$d gram carbs</string>
+    <string name="hypoppred_TT_bg_summary">BG level for hypo TT</string>
+    <string name="hypoppred_TT_bg">BG level for hypo TT</string>
+    <string name="key_hypoppred_TT_bg">hypoppred_TT_bg</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>

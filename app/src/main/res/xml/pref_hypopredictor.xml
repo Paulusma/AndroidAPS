@@ -42,6 +42,18 @@
             validate:testType="numericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="0.0"
+            android:summary="@string/hypoppred_TT_bg_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_hypoppred_TT_bg"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_TT_bg"
+            validate:floatminNumber="0.0"
+            validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
             android:defaultValue="15"
             android:summary="@string/hypoppred_waittime_summary"
             android:digits="0123456789"
@@ -51,8 +63,8 @@
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/hypoppred_waittime"
-            validate:maxNumber="120"
-            validate:minNumber="20"
+            validate:maxNumber="60"
+            validate:minNumber="0"
             validate:testType="numericRange" />
         <PreferenceScreen android:title="@string/hypoppred_algorithm">
 
@@ -92,7 +104,7 @@
                 validate:testType="floatNumericRange" />
 
         </PreferenceScreen>
-        
+
         <com.andreabaccega.widget.ValidatingEditTextPreference
             android:defaultValue="0.0"
             android:summary="@string/hypoppred_threshold_bg_summary"
