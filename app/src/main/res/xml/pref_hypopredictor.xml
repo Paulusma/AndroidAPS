@@ -5,6 +5,18 @@
         android:key="hypoppred"
         android:title="@string/hypoppred_settings">
 
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="0.0"
+            android:summary="@string/hypoppred_threshold_bg_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_hypoppred_threshold_bg"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_threshold_bg"
+            validate:floatminNumber="0.0"
+            validate:testType="floatNumericRange" />
+
         <SwitchPreference
             android:defaultValue="false"
             android:key="@string/key_hypoppred_24hwindow"
@@ -38,7 +50,7 @@
             android:singleLine="true"
             android:title="@string/hypoppred_horizon"
             validate:maxNumber="120"
-            validate:minNumber="20"
+            validate:minNumber="15"
             validate:testType="numericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
@@ -104,18 +116,6 @@
                 validate:testType="floatNumericRange" />
 
         </PreferenceScreen>
-
-        <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="0.0"
-            android:summary="@string/hypoppred_threshold_bg_summary"
-            android:inputType="numberDecimal"
-            android:key="@string/key_hypoppred_threshold_bg"
-            android:maxLines="1"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/hypoppred_threshold_bg"
-            validate:floatminNumber="0.0"
-            validate:testType="floatNumericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
             android:defaultValue="0.0"

@@ -20,6 +20,7 @@ import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.events.EventReloadProfileSwitchData;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.events.EventTreatmentChange;
 import info.nightscout.androidaps.interfaces.PluginBase;
@@ -28,6 +29,7 @@ import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.APSResult;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
@@ -89,19 +91,21 @@ public class HypoPredictorPlugin extends PluginBase {
         // Check after AndroidAPS restart if we had a TT running and sync with that
         if (isEnabled(PluginType.GENERAL)) {
             synchronized (this) {
+                currentProfile = ProfileFunctions.getInstance().getProfile();
                 lastStatus = GlucoseStatus.getGlucoseStatusData(true);
-                if (lastStatus != null)
-                    fitBGCurve();
 
                 TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
                 if (currentTarget != null && currentTarget.reason.equals(MainApp.gs(R.string.hypo_detection))) {
                     runningHypoTT = currentTarget;
                     timePCLastSatisfied = now();
                 }
-
+                if (lastStatus != null){
+                    fitBGCurve();
+                    executeCheck();
+                    checkHypoAlert();
+                }
             }
         }
-        checkHypoAlert();
     }
 
     @Override
@@ -134,6 +138,9 @@ public class HypoPredictorPlugin extends PluginBase {
     public synchronized void onEventTreatmentChange(final EventTreatmentChange ev) {
         if (!isEnabled(PluginType.GENERAL))
             return;
+        if (lastStatus == null)
+            lastStatus = GlucoseStatus.getGlucoseStatusData(true);
+
         try {
             // If carbs are scheduled hypo TT is suppressed
             executeCheck();
@@ -147,12 +154,17 @@ public class HypoPredictorPlugin extends PluginBase {
     public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
         if (!isEnabled(PluginType.GENERAL))
             return;
+        if (lastStatus == null)
+            lastStatus = GlucoseStatus.getGlucoseStatusData(true);
+
         try {
             TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
             if (pluginIsRunning()) {
                 if (currentTarget != null) {
-                    if (runningHypoTT.date != currentTarget.date)
-                        endHypoTT(false); // allow, sync
+                    if (runningHypoTT.date != currentTarget.date) {
+                        endHypoTT(false);
+                        executeCheck();
+                    }
                 } else {
                     // don't allow manual cancellation of our TT
                     endHypoTT(false); // sync
@@ -168,16 +180,26 @@ public class HypoPredictorPlugin extends PluginBase {
 
     @Subscribe
     @SuppressWarnings("unused")
+    public void onStatusEvent(final EventReloadProfileSwitchData ev) {
+        currentProfile = ProfileFunctions.getInstance().getProfile();
+    }
+
+    @Subscribe
+    @SuppressWarnings("unused")
     public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
         if (!isEnabled(PluginType.GENERAL))
             return;
+        if (lastStatus == null)
+            lastStatus = GlucoseStatus.getGlucoseStatusData(true);
+
         try {
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
                     ev.isChanged(R.string.key_hypoppred_window_from) ||
                     ev.isChanged(R.string.key_hypoppred_algorithm) ||
-                    ev.isChanged(R.string.key_hypoppred_horizon)) {
+                    ev.isChanged(R.string.key_hypoppred_horizon) ||
+                    ev.isChanged(R.string.key_hypoppred_waittime)) {
 
                 // Sync state with changed preferences
                 executeCheck();
@@ -186,6 +208,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 fitBGCurve();
                 executeCheck();
             } else if (ev.isChanged(R.string.key_hypoppred_threshold_alert)) {
+                SP.putLong("nextHypoAlarm", System.currentTimeMillis());
                 checkHypoAlert();
             }
         } catch (Exception e) {
@@ -193,7 +216,6 @@ public class HypoPredictorPlugin extends PluginBase {
         }
     }
 
-    // Threadsafe to prevent checks on inconsistent state
     private void executeCheck() {
         try {
             if (lastStatus == null)
@@ -228,10 +250,19 @@ public class HypoPredictorPlugin extends PluginBase {
             return false;
         }
 
+        // Check if we only guard in specific time frame
+        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
+        long frameStart = SP.getLong(R.string.key_hypoppred_window_from, 0L);
+        long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
+        int time = Profile.secondsFromMidnight() / 60;
+
+        if (!useFrame || (time >= frameStart && time < frameEnd)) {
+            return false;
+        }
+
         // Never TT if BG above LOW level and rising
-        double threshold = Math.max(OverviewPlugin.bgTargetLow,
-                Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
-                        , currentProfile.getUnits()));
+        double threshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
+                        , currentProfile.getUnits());
         if (lastStatus.glucose > threshold && lastBGTrendIsRising())
             return false;
 
@@ -262,21 +293,6 @@ public class HypoPredictorPlugin extends PluginBase {
                 timePCLastSatisfied = now();
                 return true;
             }
-        }
-
-        // Lastly check if condition 'BG lower then threshold' applies
-        // This is done last to give predictors a chance to warn for impending hypo
-        double bgThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
-                , currentProfile.getUnits());
-        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
-        long frameStart = SP.getLong(R.string.key_hypoppred_window_from, 0L);
-        long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
-        int time = Profile.secondsFromMidnight() / 60;
-
-        if ((lastStatus.glucose <= bgThreshold)
-                && (!useFrame || (time >= frameStart && time < frameEnd))) {
-            timePCLastSatisfied = now();
-            return true;
         }
 
         return false;
@@ -346,10 +362,9 @@ public class HypoPredictorPlugin extends PluginBase {
 
         if (Config.APS)
             predictionsAvailable = finalLastRun != null && finalLastRun.request.hasPredictions;
-        else if (Config.NSCLIENT)
-            predictionsAvailable = true;
         else
-            predictionsAvailable = false;
+            predictionsAvailable = Config.NSCLIENT;
+
         APSResult apsResult = null;
         if (predictionsAvailable) {
             if (Config.APS)
@@ -376,8 +391,7 @@ public class HypoPredictorPlugin extends PluginBase {
             }
 
             // IOB only reliable if no cargs on board, ie if COB not calculated
-            if (iobLow && noCarbsOnBoard)
-                return true;
+            return (iobLow && noCarbsOnBoard);
         }
 
         return false;
@@ -389,15 +403,10 @@ public class HypoPredictorPlugin extends PluginBase {
     private long gcCurveOffset = 0;
 
     private void fitBGCurve() {
-        boolean useFrame = SP.getBoolean(R.string.key_hypoppred_24hwindow, false);
         double weightFactor = SP.getDouble(R.string.key_hypoppred_algorithm_weight, 0.95d);
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
 
         // Get recent observations
-        long timeStartBG = 0;
-        long timeMinBG = 0;
-        double minBgValue = Double.MIN_VALUE;
-
         IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
         List<BgReading> bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
 
@@ -422,16 +431,11 @@ public class HypoPredictorPlugin extends PluginBase {
         List lObs = obs.toList();
         if (lObs.size() < 3) return;
 
-        polynomalFit(lObs);
-
-        //TODO: if BG descending then fit using logistic curve. Parameters from linear curve
-        //    glucoseCurveFit(lObs);
-    }
-
-    private void polynomalFit(List lObs) {
         PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
         gcPolyCoeff = fitter.fit(lObs);
         gcPolyCurve = new PolynomialFunction(gcPolyCoeff);
+
+        //TODO: if BG descending then fit using logistic curve. Parameters from linear curve
     }
 
     private boolean checkHypoUsingBGCurveFit() {
@@ -453,17 +457,17 @@ public class HypoPredictorPlugin extends PluginBase {
         double b = gcPolyCoeff[0] - hypoBG;
         if (a != 0) {
             double t1 = -b / a;
-            boolean imminentHypo = (t1 >= 0 && t1 <= horizonSec);
-            return imminentHypo;
+            return (t1 >= 0 && t1 <= horizonSec);
         } else {
             // not reaching thresholdBG
-            boolean belowThreshold = (gcPolyCurve.value(0) < 0);
-            return belowThreshold;
+            return (gcPolyCurve.value(0) < 0);
         }
     }
 
     public List<BgReading> getFittedPolyCurve(long fromTime, long toTime) {
-        if (gcPolyCurve == null || !isEnabled(PluginType.GENERAL))
+        if (gcPolyCurve == null
+                || !isEnabled(PluginType.GENERAL)
+                || gcPolyCoeff[1] >= 0) // Only interested in descending line...
             return null;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
@@ -482,67 +486,11 @@ public class HypoPredictorPlugin extends PluginBase {
         return curve;
     }
 
-    private BaseGlucoseCurve gcCurve = null;
-    private double[] gcCurveParameters = null;
-
-    private void glucoseCurveFit(List lObs) {
-        double[] initialGuess = {1.0, 1.0, 1.0};
-
-        GlucoseCurveFitter fitter = new GlucoseCurveFitter(initialGuess);
-        gcCurveParameters = fitter.fit(lObs);
-    }
-
-    private boolean checkHypoUsingGlucoseGCurveFit() {
-        if (gcCurve == null) {
-            return false;
-        }
-
-        if (currentProfile == null) {
-            return false;
-        }
-
-        double hypoBG = OverviewPlugin.bgTargetLow;
-        double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 3.5d),
-                currentProfile.getUnits());
-        int hypoHorizon = SP.getInt(R.string.key_hypoppred_horizon, 60);
-
-        long horizonSec = hypoHorizon * 60;
-
-        // Determine intersection with LOW line
-        long lowTime = determineLowTime(getFittedGlucoseCurve(0, horizonSec));
-        return (lowTime >= 0 && lowTime <= horizonSec);
-    }
-
-    private long determineLowTime(List<BgReading> fittedGlucoseCurve) {
-        //TODO
-        return 0;
-    }
-
-    public List<BgReading> getFittedGlucoseCurve(long fromTime, long toTime) {
-        if (gcCurve == null || !isEnabled(PluginType.GENERAL))
-            return null;
-
-        int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
-        long start = Math.max(fromTime / 1000 - gcCurveOffset, now() / 1000 - gcCurveOffset - (steps5Min + 6) * 5 * 60);
-        long end = toTime / 1000 - gcCurveOffset;
-
-        List<BgReading> curve = new ArrayList<>();
-        int nSteps = (int) (end - start) / 60;
-        for (int i = 0; i <= nSteps; i++) {
-            BgReading bg = new BgReading();
-            bg.date = (start + i * 60) * 1000 + gcCurveOffset * 1000;
-            bg.value = gcCurve.value(start + i * 60);
-            curve.add(bg);
-        }
-
-        return curve;
-    }
-
     /**
      * Sound alarm. If condition persists alarm will again be sounded in 15 min.
      */
 
-    public void checkHypoAlert() {
+    private void checkHypoAlert() {
         try {
             if (currentProfile == null) {
                 return;
@@ -564,7 +512,7 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     private void startHypoAlert(int inMinutes, int gramCarbs) {
-        if (SP.getLong("nextHypoAlarm", 0l) < System.currentTimeMillis()) {
+        if (SP.getLong("nextHypoAlarm", 0L) <= System.currentTimeMillis()) {
             Notification n = new Notification(Notification.HYPO_ALERT, MainApp.gs(R.string.hypoppred_alert_msg, inMinutes, gramCarbs), Notification.URGENT);
             n.soundId = R.raw.urgentalarm;
             SP.putLong("nextHypoAlarm", System.currentTimeMillis() + 15 * 60 * 1000);
@@ -588,6 +536,34 @@ public class HypoPredictorPlugin extends PluginBase {
         return (lastStatus != null
                 && (lastStatus.delta > 10
                 && lastStatus.short_avgdelta > 10));
+    }
+
+    private class Hypo{
+        public Double getDate() {
+            return date;
+        }
+
+        public Double getLowestBG() {
+            return lowestBG;
+        }
+
+        public Double getLowestDate() {
+            return lowestDate;
+        }
+
+        private Double date;
+        private Double lowestBG;
+        private Double lowestDate;
+
+        Hypo(Double _date){
+            date = _date;
+        }
+
+        Hypo(Double _date, double _lowestBG, Double _lowestDate){
+            date = _date;
+            lowestBG = _lowestBG;
+            lowestDate = _lowestDate;
+        }
     }
 
 }

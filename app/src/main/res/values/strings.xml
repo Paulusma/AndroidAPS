@@ -1349,8 +1349,8 @@
     <string name="hypoppred_window_to">End:</string>
     <string name="hypoppred_window_to_summary">End of timeframe</string>
     <string name="key_hypoppred_threshold_bg">hypoppred_threshold_bg</string>
-    <string name="hypoppred_threshold_bg">Always start a hypo TT when BG drops below this level.</string>
-    <string name="hypoppred_threshold_bg_summary">Always start a hypo TT when BG drops below this level.</string>
+    <string name="hypoppred_threshold_bg">Guard against BG dropping below:</string>
+    <string name="hypoppred_threshold_bg_summary">Guard against BG dropping below:</string>
     <string name="key_hypoppred_window_to">hypoppred_window_to</string>
     <string name="key_hypoppred_window_from">hypoppred_window_from</string>
     <string name="hypo_detection">Hypo detection</string>
