@@ -86,7 +86,7 @@ import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment;
 import info.nightscout.androidaps.plugins.general.careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.general.careportal.OptionsToShow;
-import info.nightscout.androidaps.plugins.general.monitors.HypoPredictorPlugin;
+import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
@@ -1477,7 +1477,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
                     SP.getBoolean(R.string.key_hypoppred_algorithm, false)){// TODO: en verder: && SP.getBoolean("showprediction", false))
-                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedPolyCurve(fromTime, endTime), lowLine, highLine);
+                graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedBGCurve(fromTime, endTime), lowLine, highLine);
             }
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, endTime);

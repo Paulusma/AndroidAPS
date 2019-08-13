@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:validate="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:key="droptarget"
+        android:title="@string/droptarget_settings">
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="@string/key_droptarget_24hwindow"
+        android:title="@string/droptarget_24hwindow_title"
+        android:summary="@string/droptarget_24hwindow_summary"/>
+
+    <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
+        android:defaultValue="0"
+        android:dependency="@string/key_droptarget_24hwindow"
+        android:title="@string/droptarget_window_from"
+        android:key="@string/key_droptarget_window_from"
+        android:summary="@string/droptarget_window_from_summary"
+        />
+
+    <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
+        android:defaultValue="24"
+        android:dependency="@string/key_droptarget_24hwindow"
+        android:title="@string/droptarget_window_to"
+        android:key="@string/key_droptarget_window_to"
+        android:summary="@string/droptarget_window_to_summary"
+        />
+
+    <com.andreabaccega.widget.ValidatingEditTextPreference
+        android:defaultValue="0.0"
+        android:summary="@string/droptarget_TT_bg_summary"
+        android:inputType="numberDecimal"
+        android:key="@string/key_droptarget_TT_bg"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/droptarget_TT_bg"
+        validate:floatminNumber="0.0"
+        validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="15"
+            android:summary="@string/droptarget_waittime_summary"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="@string/key_droptarget_waittime"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/droptarget_waittime"
+            validate:maxNumber="60"
+            validate:minNumber="0"
+            validate:testType="numericRange" />
+
+    </PreferenceCategory>
+</PreferenceScreen>

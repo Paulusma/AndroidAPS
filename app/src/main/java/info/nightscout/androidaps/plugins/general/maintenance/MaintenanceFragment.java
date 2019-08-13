@@ -42,6 +42,15 @@ public class MaintenanceFragment extends Fragment {
 
         final Fragment f = this;
 
+        view.findViewById(R.id.log_view).setOnClickListener(view1 -> {
+            String myStringArray[]= {"logcat","-d"};
+            try {
+          //     LogcatActivity.launch(getContext());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
         view.findViewById(R.id.log_send).setOnClickListener(view1 -> MaintenancePlugin.getPlugin().sendLogs());
 
         view.findViewById(R.id.log_delete).setOnClickListener(view1 -> MaintenancePlugin.getPlugin().deleteLogs());

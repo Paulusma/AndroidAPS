@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.monitors;
+package info.nightscout.androidaps.plugins.general.bgmonitors;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -13,7 +13,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.data.Profile;
 
 public class TimePreference extends DialogPreference {
     private Calendar calendar;
