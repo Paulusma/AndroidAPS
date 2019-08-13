@@ -98,7 +98,7 @@ public class L {
     public static final String UI = "UI";
     public static final String SMS = "SMS";
     public static final String HYPOPRED = "HYPOPRED";
-
+    public static final String DROPTARGET = "DROPTARGET";
 
     private static void initialize() {
         logElements = new ArrayList<>();
@@ -125,6 +125,7 @@ public class L {
         logElements.add(new LogElement(SMS, true));
         logElements.add(new LogElement(UI, true));
         logElements.add(new LogElement(HYPOPRED, true));
+        logElements.add(new LogElement(DROPTARGET, true));
     }
 
 }
