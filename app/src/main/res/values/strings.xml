@@ -1410,7 +1410,16 @@
     <string name="droptarget_waittime_summary">Time TT runs after stable BG ends (mins)</string>
     <string name="droptarget_waittime">Time TT runs after stable BG ends (mins)</string>
     <string name="view_log">View log</string>
-
+    <string name="create_log_file_failed">Create log file failed</string>
+    <string name="not_support_on_this_device">Not supported on this device</string>
+    <string-array name="logcat_spinner">
+        <item>Verbose</item>
+        <item>Debug</item>
+        <item>Info</item>
+        <item>Warning</item>
+        <item>Error</item>
+        <item>Fatal</item>
+    </string-array>
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
