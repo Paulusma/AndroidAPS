@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.logging.logviewer.LogcatActivity;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
 import info.nightscout.androidaps.plugins.general.maintenance.activities.LogSettingActivity;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
@@ -45,7 +46,7 @@ public class MaintenanceFragment extends Fragment {
         view.findViewById(R.id.log_view).setOnClickListener(view1 -> {
             String myStringArray[]= {"logcat","-d"};
             try {
-          //     LogcatActivity.launch(getContext());
+               LogcatActivity.launch(getContext());
             } catch (Exception e) {
                 e.printStackTrace();
             }

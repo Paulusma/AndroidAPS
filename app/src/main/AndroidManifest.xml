@@ -39,6 +39,22 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
+        <activity
+            android:name=".logging.logviewer.LogcatActivity"
+            android:label=""
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            />
+
+        <activity
+            android:name=".logging.logviewer.LogcatDetailActivity"
+            android:label="Log detail"
+            android:theme="@style/Theme.AppCompat"
+            >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".logging.logviewer.LogcatActivity"/>
+        </activity>
+
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -156,6 +172,18 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
+        <!-- log viewer
+        <provider
+            android:name=".logging.logviewer.LogcatFileProvider"
+            android:authorities="${applicationId}.logcat_fileprovider"
+            android:grantUriPermissions="true"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/logcat_filepaths" />
+        </provider>
+        <service android:name=".logging.logviewer.FloatingLogcatService"/>
+-->
         <!-- Service processing incomming data -->
         <service
             android:name=".services.DataService"

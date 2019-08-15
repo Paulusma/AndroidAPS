@@ -18,7 +18,6 @@ import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
-import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.events.EventTreatmentChange;
@@ -36,6 +35,7 @@ import info.nightscout.androidaps.plugins.general.overview.notifications.Notific
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -67,7 +67,7 @@ import static info.nightscout.androidaps.utils.DateUtil.now;
  * - alert is suppressed if hypo in progress but BG is already rising fast
  * * curve fitting algorithm
  * - result is displayed in the overview BG graph (only when BG is descending) TODO: this should be optional
- * - currently uses a linear polynomial fit TODO: should also use an exponential fit and determin carbs required
+ * - currently uses a linear polynomial fit TODO: should also use an exponential fit and determine carbs required
  */
 public class HypoPredictorPlugin extends PluginBase {
 
@@ -104,17 +104,17 @@ public class HypoPredictorPlugin extends PluginBase {
                 .preferencesId(R.xml.pref_hypopredictor)
                 .description(R.string.description_hypoppred)
         );
-        log.debug(">>");
+        log.info(">>");
     }
 
     @Override
     protected void onStart() {
-        log.debug(">>");
+        log.info(">>");
         MainApp.bus().register(this);
         super.onStart();
 
         if (isEnabled(PluginType.GENERAL)) {
-            log.debug("Disabled");
+            log.info("Disabled");
             return;
         }
 
@@ -127,15 +127,15 @@ public class HypoPredictorPlugin extends PluginBase {
 
                 TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
                 if (currentTarget != null && currentTarget.reason.startsWith(MainApp.gs(R.string.hypo_detection))) {
-                    log.debug("Found running hypo TT, syncing with that");
+                    log.info("Found running hypo TT, syncing with that");
                     runningHypoTT = currentTarget;
                 }
                 if (lastStatus != null) {
-                    log.debug("Glucose data available");
+                    log.info("Glucose data available");
                     fitBGCurve();
                     executeCheck();
                 } else
-                    log.debug("NO glucose data available");
+                    log.info("NO glucose data available");
             }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -147,30 +147,27 @@ public class HypoPredictorPlugin extends PluginBase {
         super.onStop();
         MainApp.bus().unregister(this);
 
-        log.debug(">>");
+        log.info(">>");
     }
 
     @Subscribe
     @SuppressWarnings("unused")
-    public synchronized void onEventNewBG(final EventNewBG ev) {
-        log.debug(">>");
+    public synchronized void onEventAutosensCalculationFinished(final EventAutosensCalculationFinished ev) {
+        log.info(">>");
         if (!isEnabled(PluginType.GENERAL) || !getProfile()) {
-            log.debug("Disabled/missing profile");
+            log.info("Disabled/missing profile");
             return;
         }
 
         try {
-            if (ev.bgReading != null) {
-                lastStatus = GlucoseStatus.getGlucoseStatusData(true);
-                cobInfo = IobCobCalculatorPlugin.getPlugin().getCobInfo(false, "Hypo detection");
-                if (lastStatus != null) {
-                    log.debug("Glucose data found");
-                    fitBGCurve();
-                    executeCheck();
-                }else
-                    log.debug("NO glucose data found");
+            lastStatus = GlucoseStatus.getGlucoseStatusData(true);
+            cobInfo = IobCobCalculatorPlugin.getPlugin().getCobInfo(false, "Hypo detection");
+            if (lastStatus != null) {
+                log.info("Glucose data found");
+                fitBGCurve();
+                executeCheck();
             } else
-                log.debug("NO BG reading...");
+                log.info("NO glucose data found");
         } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
@@ -179,9 +176,9 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTreatmentChange(final EventTreatmentChange ev) {
-        log.debug(">>");
+        log.info(">>");
         if (!isEnabled(PluginType.GENERAL) || !getProfile()) {
-            log.debug("Disabled/missing profile");
+            log.info("Disabled/missing profile");
             return;
         }
 
@@ -199,9 +196,9 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
-        log.debug(">>");
+        log.info(">>");
         if (!isEnabled(PluginType.GENERAL) || !getProfile()) {
-            log.debug("Disabled/missing profile");
+            log.info("Disabled/missing profile");
             return;
         }
 
@@ -234,9 +231,9 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
-        log.debug(">>");
+        log.info(">>");
         if (!isEnabled(PluginType.GENERAL) || !getProfile()) {
-            log.debug("Disabled/missing profile");
+            log.info("Disabled/missing profile");
             return;
         }
 
@@ -270,40 +267,51 @@ public class HypoPredictorPlugin extends PluginBase {
         }
     }
 
+
+    // Keep data of last fit in cache for UI re-draws
+    private long fittedCurveOffset = 0;
+    private List<BgReading> lastFit = new ArrayList<>();
+    private long lastFromTime = 0, lastToTime = 0;
+
     public List<BgReading> getFittedBGCurve(long fromTime, long toTime) {
-        log.debug(">>");
         if (!isEnabled(PluginType.GENERAL) || !getProfile()) {
-            log.debug("Disabled");
             return null;
         }
 
         if (fittedBGCurve == null
                 || fittedBGCurveParameters[1] >= 0) { // Only interested in descending line...
-            log.debug("curve not fitted yet");
             return null;
         }
+
+        if (!lastFit.isEmpty()
+                && (lastFromTime == fromTime && lastToTime == toTime)) {
+            return lastFit;
+        }
+        lastFromTime = fromTime;
+        lastToTime = toTime;
 
         int steps5Min = SP.getInt(R.string.key_hypoppred_algorithm_steps, 12);
         long start = Math.max(fromTime / 1000 - fittedCurveOffset, now() / 1000 - fittedCurveOffset - (steps5Min + 6) * 5 * 60);
         long end = toTime / 1000 - fittedCurveOffset;
 
-        List<BgReading> curve = new ArrayList<>();
+        List<BgReading> lastFit = new ArrayList<>();
         int nSteps = (int) (end - start) / 60;
         for (int i = 0; i <= nSteps; i++) {
             BgReading bg = new BgReading();
             bg.date = (start + i * 60) * 1000 + fittedCurveOffset * 1000;
             bg.value = fittedBGCurve.value(start + i * 60);
-            curve.add(bg);
+            lastFit.add(bg);
         }
 
-        log.debug("curve available");
-        return curve;
+        return lastFit;
     }
 
+    // TODO: check if hypo time is correct
+    // TODO: use exponentioal fit for curve
     private void executeCheck() {
         try {
             if (lastStatus == null) {
-                log.debug("lastStatus == null");
+                log.info("lastStatus == null");
                 return;
             }
             detectedLowsAndHypos.clear();
@@ -312,7 +320,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 // Additionaly use independent predictions based on recent BG data
                 gatherFittedBGCurveHypoPredictions();
             } else
-                log.debug("skipping curve fitting");
+                log.info("skipping curve fitting");
 
 
             // Hypo prevention.
@@ -321,7 +329,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 if (low == null) {
                     endHypoTT(true);
                 } else
-                    log.debug("Low found: " + low.getSource() + "@" + low.getLowLevelMins() + " (already running)");
+                    log.info("Low found: " + low.getSource() + "@" + low.getLowLevelMins() + " (already running)");
             } else if (low != null) {
 
                 double hypoTTTargetLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_TT_bg, 0d)
@@ -331,11 +339,11 @@ public class HypoPredictorPlugin extends PluginBase {
                 TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
                 if (currentTarget == null || currentTarget.low < hypoTTTargetLevel) {
                     startHypoTT(currentTarget, hypoTTTargetLevel, duration, low);
-                }else if (log.isDebugEnabled()) {
-                    log.debug("Low found: " + low.getSource() + "@" + low.getLowLevelMins() + " but current TT has higher target");
+                } else if (log.isInfoEnabled()) {
+                    log.info("Low found: " + low.getSource() + "@" + low.getLowLevelMins() + " but current TT has higher target");
                 }
             } else
-                log.debug("No low (idle)");
+                log.info("No low (idle)");
 
 
             // Hypo alert message
@@ -343,7 +351,7 @@ public class HypoPredictorPlugin extends PluginBase {
             if (hypo != null) {
                 executeHypoAlert(hypo);
             } else
-                log.debug("No imminent hypo");
+                log.info("No imminent hypo");
         } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
@@ -356,7 +364,7 @@ public class HypoPredictorPlugin extends PluginBase {
         // No detection if 'eating soon' is active
         TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
         if (currentTarget != null && MainApp.gs(R.string.eatingsoon).equals(currentTarget.reason)) {
-            log.debug("Skip detection - eating soon active");
+            log.info("Skip detection - eating soon active");
             return null;
         }
 
@@ -367,8 +375,8 @@ public class HypoPredictorPlugin extends PluginBase {
             if (treatment.isValid
                     && (treatment.date > now() && treatment.date < now() + 60 * 60 * 1000)
                     && treatment.carbs > 0) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Skip detection - imminent treatment found (" + treatment.carbs + "@" + ((treatment.date - now()) / 60 / 1000) + "mins)");
+                if (log.isInfoEnabled()) {
+                    log.info("Skip detection - imminent treatment found (" + treatment.carbs + "@" + ((treatment.date - now()) / 60 / 1000) + "mins)");
                 }
                 return null;
             }
@@ -380,7 +388,7 @@ public class HypoPredictorPlugin extends PluginBase {
         long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
         int time = Profile.secondsFromMidnight() / 60;
         if (useFrame && (time < frameStart || time > frameEnd)) {
-            log.debug("Skip detection - not wihin configured timeframe");
+            log.info("Skip detection - not wihin configured timeframe");
             return null;
         }
 
@@ -388,14 +396,14 @@ public class HypoPredictorPlugin extends PluginBase {
         double detectionThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
                 , currentProfile.getUnits());
         if (lastStatus.glucose < detectionThreshold && lastBGTrendIsRising()) {
-            log.debug("Skip detection - in low but BG rising");
+            log.info("Skip detection - in low but BG rising");
             return null;
         }
 
         // Currently already below threshold?
         if (lastStatus.glucose < detectionThreshold) {
             timeDetectConditionLastSatisfied = now();
-            log.debug("Detected low: now");
+            log.info("Detected low: now");
             return new BGLow("ACT", 0, BGLow.NONE, 0, BGLow.NONE);
         }
 
@@ -403,25 +411,25 @@ public class HypoPredictorPlugin extends PluginBase {
         ) {
             if (bgLow.getLowLevelMins() != BGLow.NONE) {
                 timeDetectConditionLastSatisfied = now();
-                if (log.isDebugEnabled()) {
-                    log.debug("Detected low: " + bgLow.getSource() + "@" + bgLow.getLowestBGMins());
+                if (log.isInfoEnabled()) {
+                    log.info("Detected low: " + bgLow.getSource() + "@" + bgLow.getLowestBGMins());
                 }
                 return bgLow;
             }
         }
 
-        log.debug("No low detected");
+        log.info("No low detected");
         return null;
     }
 
     private boolean hypoTTRunning() {
-        log.debug("Hypo running: " + runningHypoTT);
+        log.info("Hypo running: " + runningHypoTT);
         return (runningHypoTT != null);
     }
 
     private void startHypoTT(TempTarget currentTarget, double target, int duration, BGLow low) {
         if (currentTarget != null) {
-            log.debug("Saving current TT started at: " + currentTarget.date);
+            log.info("Saving current TT started at: " + currentTarget.date);
             previousTT = new TempTarget();
             previousTT.copyFrom(currentTarget);
         }
@@ -435,42 +443,42 @@ public class HypoPredictorPlugin extends PluginBase {
                 .low(target)
                 .high(target);
 
-        log.debug("Starting TT");
+        log.info("Starting TT");
         TreatmentsPlugin.getPlugin().addToHistoryTempTarget(runningHypoTT);
     }
 
     private void endHypoTT(boolean wait) {
-        log.debug("Wait check: " + wait);
+        log.info("Wait check: " + wait);
         if (wait) {
             long waitTimeMins = SP.getLong(R.string.key_hypoppred_waittime, 0L);
             if (now() < timeDetectConditionLastSatisfied + waitTimeMins * 60 * 1000) {
-                log.debug("Skipped - Waittime not yet passed");
+                log.info("Skipped - Waittime not yet passed");
                 return;
-            }
-
-            if (previousTT != null && previousTT.isInProgress()) {
-                // Previous TT would still be in progress so let it run for the remainder of its original duration
-                log.debug("Restoring previous TT at " + previousTT.date);
-                int minutesRemaining = (int) (previousTT.end() - now()) / 60 / 1000;
-                previousTT.date(DateUtil.roundDateToSec(now()))
-                        .duration(minutesRemaining)
-                        .reason(previousTT.reason + R.string.hypopred_continued);
-                TreatmentsPlugin.getPlugin().addToHistoryTempTarget(previousTT);
-            } else {
-                log.debug("Ending hypo TT");
-                TempTarget tempTT = new TempTarget()
-                        .source(Source.USER)
-                        .date(DateUtil.roundDateToSec(now()))
-                        .reason(MainApp.gs(R.string.hypo_detection))
-                        .duration(0)
-                        .low(0)
-                        .high(0);
-                TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTT);
             }
         }
 
+        if (previousTT != null && previousTT.isInProgress()) {
+            // Previous TT would still be in progress so let it run for the remainder of its original duration
+            log.info("Restoring previous TT at " + previousTT.date);
+            int minutesRemaining = (int) (previousTT.end() - now()) / 60 / 1000;
+            previousTT.date(DateUtil.roundDateToSec(now()))
+                    .duration(minutesRemaining)
+                    .reason(previousTT.reason + R.string.hypopred_continued);
+            TreatmentsPlugin.getPlugin().addToHistoryTempTarget(previousTT);
+        } else {
+            log.info("Ending hypo TT");
+            TempTarget tempTT = new TempTarget()
+                    .source(Source.USER)
+                    .date(DateUtil.roundDateToSec(now()))
+                    .reason(MainApp.gs(R.string.hypo_detection))
+                    .duration(0)
+                    .low(0)
+                    .high(0);
+            TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTT);
+        }
+
         // Also reset plugin state to 'idle'
-        log.debug("Reset state to idle");
+        log.info("Reset state to idle");
         runningHypoTT = null;
         previousTT = null;
         timeDetectConditionLastSatisfied = 0;
@@ -501,7 +509,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 apsResult = NSDeviceStatus.getAPSResult();
         }
         if (apsResult != null) {
-            log.debug("Predictions available");
+            log.info("Predictions available");
             boolean skipIOB = (cobInfo.displayCob != null && cobInfo.displayCob > 0);
 
             List<BgReading> predictions = apsResult.getPredictions();
@@ -548,8 +556,8 @@ public class HypoPredictorPlugin extends PluginBase {
                         }
                     }
                     BGLow low = new BGLow(getSource(prediction), lowLevelMins, alertLevelMins, lowestBG, lowestBGMins);
-                    if (log.isDebugEnabled()) {
-                        log.debug("Found low: " + low.getSource()
+                    if (log.isInfoEnabled()) {
+                        log.info("Found low: " + low.getSource()
                                 + " " + (low.getLowLevelMins() != BGLow.NONE ? "low@" + low.getLowLevelMins() : "")
                                 + " " + (low.getAlertLevelMins() != BGLow.NONE ? "hypo@" + low.getAlertLevelMins() + "(" + low.getLowestBG() + "@" + low.getLowestBGMins() + ")" : ""));
                     }
@@ -558,7 +566,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 }
             }
         } else
-            log.debug("No predictions available");
+            log.info("No predictions available");
     }
 
     // TODO: should be in class BgReading
@@ -590,7 +598,7 @@ public class HypoPredictorPlugin extends PluginBase {
     /*
      * Hypo detection algorithm using curve fitting
      * */
-    private long fittedCurveOffset = 0;
+    private long lastBGFitted = 0;
 
     private void fitBGCurve() {
         double weightFactor = SP.getDouble(R.string.key_hypoppred_algorithm_weight, 0.95d);
@@ -601,15 +609,21 @@ public class HypoPredictorPlugin extends PluginBase {
         List<BgReading> bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
 
         if (bgReadingsArray == null || bgReadingsArray.size() == 0) {
-            log.debug("No readings!");
             return;
         }
+
+        BgReading bgr = bgReadingsArray.get(0);
+        if (bgr.date <= lastBGFitted) {
+            // No new BG readings: we're done
+            return;
+        }
+        lastBGFitted = bgr.date;
+        lastFit.clear();
 
         // All times are in secs relative to calculation (=current) time
         fittedCurveOffset = now() / 1000;
         long start = -steps5Min * 5 * 60;
 
-        BgReading bgr;
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for (int i = 0; i < bgReadingsArray.size(); i++) {
             bgr = bgReadingsArray.get(i);
@@ -626,13 +640,17 @@ public class HypoPredictorPlugin extends PluginBase {
         fittedBGCurveParameters = fitter.fit(lObs);
         fittedBGCurve = new PolynomialFunction(fittedBGCurveParameters);
 
+        if(fittedBGCurveParameters[1] >= 0) {
+            log.info("Linear curve fitted, fitting ends here: trend is BG rising.");
+            return;
+        }
         //TODO: if BG descending then fit using logistic curve. Parameters from linear curve
-        log.debug("Curve fitted!");
+
     }
 
     private void gatherFittedBGCurveHypoPredictions() {
         if (fittedBGCurve == null) {
-            log.debug("No fitted curve yet");
+            log.info("No fitted curve yet");
             return;
         }
 
@@ -647,15 +665,15 @@ public class HypoPredictorPlugin extends PluginBase {
             if (predTimeMins <= 0)
                 if (lastStatus.glucose > detectionThreshold) {
                     // Predicted we should already be in a low but actually not yet: expect it within 5 mins
-                    log.debug("Found low: FIT@5");
+                    log.info("Found low: FIT@5");
                     detectedLowsAndHypos.add(new BGLow("FIT", 5, BGLow.NONE, 0.0d, BGLow.NONE));
                 } else {
-                    log.debug("Found low: in progress");
+                    log.info("Found low: in progress");
                     detectedLowsAndHypos.add(new BGLow("ACT", 0, BGLow.NONE, 0.0d, BGLow.NONE));
                 }
             else if (predTimeMins <= detectionHorizon) {
                 // not reaching thresholdBG
-                log.debug("Found low: FIT@" + predTimeMins);
+                log.info("Found low: FIT@" + predTimeMins);
                 detectedLowsAndHypos.add(new BGLow("FIT", predTimeMins, BGLow.NONE, 0.0d, BGLow.NONE));
             }
         }
@@ -672,15 +690,15 @@ public class HypoPredictorPlugin extends PluginBase {
             if (predTimeMins <= 0) {
                 if (lastStatus.glucose > alertThreshold) {
                     // Predicted we should already be in a hypo but actually not yet: expect it within 5 mins
-                    log.debug("Found hypo: FIT@5");
+                    log.info("Found hypo: FIT@5");
                     detectedLowsAndHypos.add(new BGLow("FIT", BGLow.NONE, 5, 0.0d, BGLow.NONE));
                 } else {
-                    log.debug("Found hypo: in progress");
+                    log.info("Found hypo: in progress");
                     detectedLowsAndHypos.add(new BGLow("FIT", BGLow.NONE, 0, 0.0d, BGLow.NONE));
                 }
             } else if (predTimeMins <= alertHorizon) {
                 // not reaching thresholdBG
-                log.debug("Found hypo: FIT@" + predTimeMins);
+                log.info("Found hypo: FIT@" + predTimeMins);
                 detectedLowsAndHypos.add(new BGLow("FIT", BGLow.NONE, predTimeMins, 0.0d, BGLow.NONE));
             }
         }
@@ -696,7 +714,7 @@ public class HypoPredictorPlugin extends PluginBase {
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 0.0d),
                 currentProfile.getUnits());
         if (lastStatus.glucose <= hypoAlertLevel && lastBGTrendIsRisingFast()) {
-            log.debug("Hypo in progress but BG rising fast");
+            log.info("Hypo in progress but BG rising fast");
             return null;
         }
 
@@ -713,18 +731,18 @@ public class HypoPredictorPlugin extends PluginBase {
         if (lastStatus.glucose < hypoAlertLevel) {
             // Update if we are already below threshold
             if (firstHypo != null && firstHypo.getAlertLevelMins() < 6) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Hypo - ACT " + "(" + firstHypo.getLowestBG() + "@" + firstHypo.getLowestBGMins());
+                if (log.isInfoEnabled()) {
+                    log.info("Hypo - ACT " + "(" + firstHypo.getLowestBG() + "@" + firstHypo.getLowestBGMins());
                 }
                 return new BGLow("ACT", BGLow.NONE, 0, firstHypo.getLowestBG(), firstHypo.getLowestBGMins());
             } else {
-                log.debug("Hypo - ACT (0@0)");
+                log.info("Hypo - ACT (0@0)");
                 return new BGLow("ACT", BGLow.NONE, 0, 0.0d, BGLow.NONE);
             }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("Hypo - " + (firstHypo != null ?
+        if (log.isInfoEnabled()) {
+            log.info("Hypo - " + (firstHypo != null ?
                     firstHypo.getSource() + "@" + firstHypo.getAlertLevelMins() + "(" + firstHypo.getLowestBG() + "@" + firstHypo.getLowestBGMins() + ")" : "no hypo"));
         }
 
@@ -761,9 +779,9 @@ public class HypoPredictorPlugin extends PluginBase {
             if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
                 NSUpload.uploadError(n.text);
             }
-            log.debug("Alarm raised.");
+            log.info("Alarm raised.");
         } else
-            log.debug("Snooze time not passed.");
+            log.info("Snooze time not passed.");
     }
 
     /*
