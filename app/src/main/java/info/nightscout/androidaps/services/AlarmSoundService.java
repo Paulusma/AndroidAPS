@@ -39,6 +39,7 @@ public class AlarmSoundService extends Service {
             log.debug("onCreate");
     }
 
+    protected static int volumeBeforeAlert = -1;
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (player != null && player.isPlaying())
             player.stop();
@@ -60,7 +61,12 @@ public class AlarmSoundService extends Service {
         player.setLooping(true); // Set looping
         AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         if (manager == null || !manager.isMusicActive()) {
-            player.setVolume(100, 100);
+      //      player.setVolume(100, 100);
+            if(volumeBeforeAlert == -1) {
+                volumeBeforeAlert = manager.getStreamVolume(AudioManager.STREAM_MUSIC);
+                int index = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                manager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0);
+            }
         }
 
         try {
@@ -77,6 +83,13 @@ public class AlarmSoundService extends Service {
     public void onDestroy() {
         if (player != null) {
             player.stop();
+
+            if(volumeBeforeAlert != -1) {
+                AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
+                manager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeBeforeAlert, 0);
+                volumeBeforeAlert = -1;
+            }
+
             player.release();
         }
 
