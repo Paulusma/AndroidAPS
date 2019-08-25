@@ -2,10 +2,10 @@ package info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor;
 
 
 class BGLow {
-    public static final long NONE = 1000L;
+    public static final long NOT_FOUND = 1000L;
 
+    private boolean isHypo;
     private long lowLevelMins;
-    private long alertLevelMins;
     private double lowestBG;
     private long lowestBGMins;
     private String source;
@@ -18,23 +18,21 @@ class BGLow {
         return lowLevelMins;
     }
 
-    long getAlertLevelMins() {
-        return alertLevelMins;
-    }
+    boolean isHypo() {return isHypo; }
 
     double getLowestBG() {
         return lowestBG;
     }
 
-    public long getLowestBGMins() {
+    long getLowestBGMins() {
         return lowestBGMins;
     }
 
 
-    BGLow(String _source, long _lowLevelMins, long _alertLevelMins, double _lowestBG, long _lowestBGMins){
+    BGLow(String _source, boolean _isHypo, long _lowLevelMins, double _lowestBG, long _lowestBGMins){
         source = _source;
         lowLevelMins = _lowLevelMins;
-        alertLevelMins = _alertLevelMins;
+        isHypo = _isHypo;
         lowestBG = _lowestBG;
         lowestBGMins = _lowestBGMins;
     }
