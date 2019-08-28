@@ -62,7 +62,6 @@ public class DropBGTargetPlugin extends PluginBase {
 
     @Override
     protected void onStart() {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         MainApp.bus().register(this);
         super.onStart();
 
@@ -81,7 +80,6 @@ public class DropBGTargetPlugin extends PluginBase {
 
     @Override
     protected void onStop() {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         super.onStop();
         MainApp.bus().unregister(this);
     }
@@ -89,7 +87,6 @@ public class DropBGTargetPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventAutosensCalculationFinished(final EventAutosensCalculationFinished ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(true)) return;
             executeCheck();
@@ -101,7 +98,6 @@ public class DropBGTargetPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
             executeCheck();
@@ -113,7 +109,6 @@ public class DropBGTargetPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
 
@@ -131,13 +126,13 @@ public class DropBGTargetPlugin extends PluginBase {
 
     private void executeCheck() {
         try {
-            if (mLastStatus == null || mIobTotal == null) return;
+            if (mLastStatus == null || mIobTotal == null || mCobInfo == null) return;
 
             boolean pcSatisfied = preconditionSatisfied();
             if (runningTT()) {
                 if (!pcSatisfied) {
                     endTT();
-                }else
+                } else
                     log.info("Keep TT running");
             } else if (pcSatisfied) {
                 if (mCurrentTarget == null) {
@@ -146,9 +141,9 @@ public class DropBGTargetPlugin extends PluginBase {
                     int duration = 180; // TT will be cancelled when stableBG condition no longer satisfied
 
                     startTT(ttTargetLevel, duration);
-                }else
+                } else
                     log.info("Can't start TT (there is another TT running)");
-            }else
+            } else
                 log.info("Precondition not satisfied");
 
         } catch (Exception e) {
@@ -172,19 +167,18 @@ public class DropBGTargetPlugin extends PluginBase {
                 && (mLastStatus.long_avgdelta < 5 && mLastStatus.long_avgdelta > -5)
                 && (mLastStatus.delta < 5 && mLastStatus.delta > -5)
                 && mLastStatus.glucose - mIobTotal.iob * sens > 4 * 18
-                && mCobInfo.displayCob == 0
-                && mLastStatus.glucose > 4*18 && mLastStatus.glucose < 8*18){
+//                && mCobInfo.displayCob == 0
+                && mLastStatus.glucose > 4 * 18 && mLastStatus.glucose < 8 * 18) {
 
             mTimeLastStableBG = now();
             return true;
         }
         return false;
     }
-    
+
     private boolean runningTT() {
         boolean running = (mCurrentTarget != null && mCurrentTarget.reason.startsWith(MainApp.gs(R.string.stable_bg)));
-        log.info("Current target: "+(mCurrentTarget!=null?mCurrentTarget.date:" (none)"));
-        log.info("TT running: "+running);
+        log.info("TT running: " + running);
 
         return running;
     }
@@ -202,7 +196,7 @@ public class DropBGTargetPlugin extends PluginBase {
 
     private void endTT() {
         long waitTimeMins = SP.getLong(R.string.key_droptarget_waittime, 0L);
-        if (now() < mTimeLastStableBG + waitTimeMins * 60 * 1000){
+        if (now() < mTimeLastStableBG + waitTimeMins * 60 * 1000) {
             log.info("Skipped - Waittime not yet passed");
             return;
         }
@@ -229,7 +223,7 @@ public class DropBGTargetPlugin extends PluginBase {
             mCobInfo = IobCobCalculatorPlugin.getPlugin().getCobInfo(false, "Hypo detection");
         }
 
-        if(mCurrentProfile != null) {
+        if (mCurrentProfile != null) {
             mIobTotal = IobCobCalculatorPlugin.getPlugin().calculateFromTreatmentsAndTempsSynchronized(now(), mCurrentProfile);
         }
 

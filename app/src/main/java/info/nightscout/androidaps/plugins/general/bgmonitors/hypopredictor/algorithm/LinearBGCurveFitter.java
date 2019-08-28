@@ -53,6 +53,6 @@ public class LinearBGCurveFitter extends BaseBGCurveFitter {
     }
 
     public boolean isDescending() {
-        return (getParms()[1] < 0);
+        return (mParms[1] < 0);
     }
 }
