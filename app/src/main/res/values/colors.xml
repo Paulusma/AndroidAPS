@@ -45,7 +45,7 @@
     <color name="tempTargetDisabledBackground">#303F9F</color>
 
 
-    <color name="colorPrimary">#212121</color>
+    <color name="colorPrimary">#000000<!--212121--></color>
     <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#40bbaa</color>
     <color name="mdtp_accent_color">#40bbaa</color>
@@ -83,7 +83,7 @@
     <color name="deviationred">#72FF0000</color>
     <color name="deviationblack">#72000000</color>
 
-    <color name="ribbonDefault">#5a595b</color>
+    <color name="ribbonDefault">#000000</color>
     <color name="ribbonWarning">#f4d700</color>
     <color name="ribbonCritical">#ff0400</color>
     <color name="ribbonTextDefault">#FFFFFF</color>

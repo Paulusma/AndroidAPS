@@ -36,7 +36,7 @@ public class LinearBGCurveFitter extends BaseBGCurveFitter {
             return mParms[0]> threshold ? -1 :0;
 
         long t = (long) ((threshold - mParms[0]) / mParms[1]);
-        if (mParms[0] > 0) {
+        if (mParms[0] > threshold) {
             if (t > horizon || t < 0)
                 return -1;
             else

@@ -129,25 +129,26 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
     public static class Holder {
 
         private static final SimpleDateFormat sDateFormat = new SimpleDateFormat(
-                "MM-dd hh:mm:ss.SSS", Locale.getDefault());
+                "hh:mm:ss", Locale.getDefault());
+//               "MM-dd hh:mm:ss.SSS", Locale.getDefault());
 
-        TextView tag;
-        TextView time;
+        //       TextView tag;
+ //       TextView time;
         TextView content;
 
         Holder(View item) {
-            tag = item.findViewById(R.id.tag);
-            time = item.findViewById(R.id.time);
+ //           tag = item.findViewById(R.id.tag);
+ //          time = item.findViewById(R.id.time);
             content = item.findViewById(R.id.content);
             item.setTag(this);
         }
 
         void parse(LogItem data) {
-            time.setText(String.format(Locale.getDefault(),"%s %d-%d/%s",
-                    sDateFormat.format(data.time), data.processId, data.threadId, data.tag));
-            content.setText(data.content);
-            tag.setText(data.priority);
-            tag.setBackgroundResource(data.getColorRes());
+ //           time.setText(String.format(Locale.getDefault(),"%s %d-%d/%s",
+ //                   sDateFormat.format(data.time), data.processId, data.threadId, data.tag));
+            content.setText(sDateFormat.format(data.time)+"/"+data.tag+" - "+data.content);
+  //          tag.setText(data.priority);
+  //          tag.setBackgroundResource(data.getColorRes());
         }
     }
 }

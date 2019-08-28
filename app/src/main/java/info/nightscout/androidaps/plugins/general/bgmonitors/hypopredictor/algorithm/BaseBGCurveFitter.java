@@ -74,6 +74,7 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
                 build();
     }
 
+    // TODO: accuracy fit?
     public BaseBGCurveFitter fit(List<BgReading> bgReadings) {
         init(bgReadings);
         if (mObs.size() < mNofParms)

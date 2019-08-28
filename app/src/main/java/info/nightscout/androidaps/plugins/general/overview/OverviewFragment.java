@@ -1223,7 +1223,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         // QuickWizard button
         QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
         if (quickWizardEntry != null && lastBG != null && pump.isInitialized() && !pump.isSuspended()) {
-            quickWizardButton.setVisibility(View.VISIBLE);
+    //        quickWizardButton.setVisibility(View.VISIBLE);
             String text = quickWizardEntry.buttonText() + "\n" + DecimalFormatter.to0Decimal(quickWizardEntry.carbs()) + "g";
             BolusWizard wizard = quickWizardEntry.doCalc(profile, profileName, lastBG, false);
             text += " " + DecimalFormatter.toPumpSupportedBolus(wizard.getCalculatedTotalInsulin()) + "U";
