@@ -24,18 +24,24 @@ public class SingleClickButton extends android.support.v7.widget.AppCompatButton
         super(context);
         this.context = context;
         super.setOnClickListener(this);
+        this.setBackgroundColor(0);
+        this.setText("");
     }
 
     public SingleClickButton(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
         super.setOnClickListener(this);
+        this.setBackgroundColor(0);
+        this.setText("");
     }
 
     public SingleClickButton(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         this.context = context;
         super.setOnClickListener(this);
+        this.setBackgroundColor(0);
+        this.setText("");
     }
 
     @Override

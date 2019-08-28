@@ -62,7 +62,7 @@ public class AlarmSoundService extends Service {
         AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         if (manager == null || !manager.isMusicActive()) {
       //      player.setVolume(100, 100);
-            if(volumeBeforeAlert == -1) {
+            if(volumeBeforeAlert == -1) { //TODO test operation whit 2 or more simultaneous notifications
                 volumeBeforeAlert = manager.getStreamVolume(AudioManager.STREAM_MUSIC);
                 int index = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
                 manager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0);

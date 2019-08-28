@@ -1375,7 +1375,7 @@
     <string name="key_hypoppred_horizon">hypoppred_algorithm_horizon</string>
     <string name="hypoppred_horizon">How far to look in the future for a hypo (min)</string>
     <string name="hypoppred_horizon_summary">Size hypo detection window (min)</string>
-    <string name="hypopred_continued">\" (continued)\"</string>
+    <string name="hypopred_continued"> (continued)</string>
     <string name="key_hypoppred_waittime">hypoppred_waittime</string>
     <string name="hypoppred_waittime_summary">Time TT remains running after hypo prediction has ended (mins)</string>
     <string name="hypoppred_waittime">Time TT continues running when hypo no longer detected (mins)</string>

@@ -38,7 +38,8 @@ import info.nightscout.androidaps.plugins.constraints.dstHelper.DstHelperPlugin;
 import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
 import info.nightscout.androidaps.plugins.constraints.storage.StorageConstraintPlugin;
 import info.nightscout.androidaps.plugins.general.actions.ActionsFragment;
-import info.nightscout.androidaps.plugins.general.bgmonitors.droptargetbg.DropTargetPlugin;
+import info.nightscout.androidaps.plugins.general.bgmonitors.dropbgtarget.DropBGTargetPlugin;
+import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalPlugin;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
 import info.nightscout.androidaps.plugins.general.maintenance.LoggerUtils;
@@ -50,7 +51,6 @@ import info.nightscout.androidaps.plugins.general.nsclient.receivers.DBAccessRec
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.persistentNotification.PersistentNotificationPlugin;
 import info.nightscout.androidaps.plugins.general.smsCommunicator.SmsCommunicatorPlugin;
-import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.versionChecker.VersionCheckerPlugin;
 import info.nightscout.androidaps.plugins.general.wear.WearPlugin;
 import info.nightscout.androidaps.plugins.general.xdripStatusline.StatuslinePlugin;
@@ -186,7 +186,7 @@ public class MainApp extends Application {
             if (Config.OTHERPROFILES) pluginsList.add(LocalProfilePlugin.getPlugin());
             pluginsList.add(TreatmentsPlugin.getPlugin());
             pluginsList.add(HypoPredictorPlugin.getPlugin());
-            pluginsList.add(DropTargetPlugin.getPlugin());
+            pluginsList.add(DropBGTargetPlugin.getPlugin());
             if (Config.SAFETY) pluginsList.add(SafetyPlugin.getPlugin());
             if (Config.SAFETY) pluginsList.add(VersionCheckerPlugin.INSTANCE);
             if (Config.SAFETY) pluginsList.add(StorageConstraintPlugin.getPlugin());
