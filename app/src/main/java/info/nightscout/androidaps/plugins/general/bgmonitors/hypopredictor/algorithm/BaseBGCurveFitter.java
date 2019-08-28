@@ -26,17 +26,13 @@ Interface to apache curvefitting routines.
 abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements ParametricUnivariateFunction, BGCurveFitter {
 
     protected double[] mParms = null;
-    protected int mNofParms = 0;
+    private int mNofParms = 0;
 
     private BaseBGCurveFitter() {
     }
 
     protected BaseBGCurveFitter(int size) {
         mNofParms = size;
-    }
-
-    public double[] getParms() {
-        return mParms;
     }
 
     public double value(double t, double... parameters) {
@@ -65,8 +61,8 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
                 AbstractCurveFitter.TheoreticalValuesFunction(this, points);
 
         return new LeastSquaresBuilder().
-                maxEvaluations(10000). //Integer.MAX_VALUE). TODO config param?
-                maxIterations(10000).//Integer.MAX_VALUE). TODO config param?
+                maxEvaluations(10000).
+                maxIterations(10000).
                 start(mParms).
                 target(target).
                 weight(new DiagonalMatrix(weights)).
@@ -74,7 +70,6 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
                 build();
     }
 
-    // TODO: accuracy fit?
     public BaseBGCurveFitter fit(List<BgReading> bgReadings) {
         init(bgReadings);
         if (mObs.size() < mNofParms)
@@ -111,7 +106,6 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
 
         WeightedObservedPoints obs = new WeightedObservedPoints();
         BgReading bgr;
-        int bgMax = 0;
         for (int i = 0; i < bgReadings.size(); i++) {
             bgr = bgReadings.get(i);
             long time = bgr.date / 1000 / 60 - mFittedCurveOffset;
@@ -119,7 +113,6 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
             int pow = (int) (-time / 5);
             double weight = Math.pow(weightFactor, pow);
             obs.add(weight, time, bgr.value);
-            bgMax++;
         }
         mObs = obs.toList();
     }

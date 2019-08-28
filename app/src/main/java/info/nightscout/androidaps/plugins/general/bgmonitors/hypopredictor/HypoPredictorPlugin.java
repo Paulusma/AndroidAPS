@@ -115,7 +115,6 @@ public class HypoPredictorPlugin extends PluginBase {
 
     @Override
     protected void onStart() {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         MainApp.bus().register(this);
         super.onStart();
 
@@ -134,7 +133,6 @@ public class HypoPredictorPlugin extends PluginBase {
 
     @Override
     protected void onStop() {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         super.onStop();
         MainApp.bus().unregister(this);
     }
@@ -142,7 +140,6 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventAutosensCalculationFinished(final EventAutosensCalculationFinished ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(true)) return;
             executeCheck();
@@ -154,7 +151,6 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTreatmentChange(final EventTreatmentChange ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
             executeCheck();
@@ -166,7 +162,6 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventTempTargetChange(final EventTempTargetChange ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
             executeCheck();
@@ -178,7 +173,6 @@ public class HypoPredictorPlugin extends PluginBase {
     @Subscribe
     @SuppressWarnings("unused")
     public synchronized void onEventPreferenceChange(final EventPreferenceChange ev) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
 
@@ -217,7 +211,6 @@ public class HypoPredictorPlugin extends PluginBase {
         return fit;
     }
 
-    // TODO: check if hypo time is correct
     private void executeCheck() {
         List<BGLow> detectedLowsAndHypos = new ArrayList<>();
         try {
@@ -249,7 +242,6 @@ public class HypoPredictorPlugin extends PluginBase {
                     log.info("Current TT has higher target");
                 }
             }
-            ;
 
             // Hypo alert message
             BGLow hypo = getImminentHypo(detectedLowsAndHypos);
@@ -325,9 +317,8 @@ public class HypoPredictorPlugin extends PluginBase {
     }
 
     private boolean lowTTRunning() {
-        boolean running =  (mCurrentTarget != null && mCurrentTarget.reason.startsWith(MainApp.gs(R.string.hypo_detection)));
-        log.info("Current target: "+(mCurrentTarget!=null?mCurrentTarget.date:" (none)"));
-        log.info("TT Running: "+running);
+        boolean running = (mCurrentTarget != null && mCurrentTarget.reason.startsWith(MainApp.gs(R.string.hypo_detection)));
+        log.info("TT Running: " + running);
 
         return running;
     }
@@ -506,8 +497,8 @@ public class HypoPredictorPlugin extends PluginBase {
         long predTimeMins = (long) mBgFit.belowThresholdAt(detectionThreshold, detectionHorizon);
         if (predTimeMins != -1) {
             double lowestBG = mBgFit.minimum(predTimeMins, 60);
-            long timeLowestBG = (long)mBgFit.belowThresholdAt(lowestBG+4.5,detectionHorizon);
-            log.info("Found LOW (FIT@" + predTimeMins + "(" + lowestBG + "@"+timeLowestBG+")");
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, detectionHorizon);
+            log.info("Found LOW (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", false, predTimeMins, lowestBG, timeLowestBG));
         }
 
@@ -518,8 +509,8 @@ public class HypoPredictorPlugin extends PluginBase {
         predTimeMins = (long) mBgFit.belowThresholdAt(alertThreshold, alertHorizon);
         if (predTimeMins != -1) {
             double lowestBG = mBgFit.minimum(predTimeMins, 60);
-            long timeLowestBG = (long)mBgFit.belowThresholdAt(lowestBG+4.5,detectionHorizon);
-            log.info("Found hypo (FIT@" + predTimeMins + "(" + lowestBG  + "@"+timeLowestBG+")");
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, detectionHorizon);
+            log.info("Found hypo (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", true, predTimeMins, lowestBG, timeLowestBG));
         }
     }
@@ -568,13 +559,13 @@ public class HypoPredictorPlugin extends PluginBase {
      */
     private void executeHypoAlert(BGLow hypo) {
         if (SP.getLong("nextHypoAlarm", 0L) <= System.currentTimeMillis()) {
-            int gramCarbs = 0;
+            int gramCarbs = 3;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
             if (hypo.getLowestBG() > 0.0d) {
                 double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 0.0d),
                         mCurrentProfile.getUnits());
                 double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
-                gramCarbs = (int) (mCurrentProfile.getIc() * (hypoAlertLevel - hypo.getLowestBG()) / sens); //TODO: autosens corrected?
+                gramCarbs += (int) (mCurrentProfile.getIc() * (hypoAlertLevel - hypo.getLowestBG()) / sens);
 
                 // Correct for recent treatment
                 if (mCobInfo.displayCob != null)
