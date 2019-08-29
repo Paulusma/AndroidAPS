@@ -273,7 +273,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     && (treatment.date > now() && treatment.date < now() + 60 * 60 * 1000)
                     && treatment.carbs > 0) {
                 if (log.isInfoEnabled()) {
-                    log.info("Skip detection - imminent treatment found (" + treatment.carbs + "@" + ((treatment.date - now()) / 60 / 1000) + "mins)");
+                    log.info("Skip LOW detection - imminent treatment found (" + treatment.carbs + "@" + ((treatment.date - now()) / 60 / 1000) + "mins)");
                 }
                 return null;
             }
@@ -291,7 +291,7 @@ public class HypoPredictorPlugin extends PluginBase {
         long frameEnd = SP.getLong(R.string.key_hypoppred_window_to, 0L);
         int time = Profile.secondsFromMidnight() / 60;
         if (useFrame && (time < frameStart || time > frameEnd)) {
-            log.info("Skip detection - not wihin configured timeframe");
+            log.info("Skip LOW detection - not wihin configured timeframe");
             return null;
         }
 
@@ -300,20 +300,28 @@ public class HypoPredictorPlugin extends PluginBase {
                 , mCurrentProfile.getUnits());
         if (mLastStatus.glucose < detectionThreshold) {
             mTimeDetectConditionLastSatisfied = now();
+            log.info("Already below LOW threshold");
             return new BGLow("ACT", false, 0, 0, BGLow.NOT_FOUND);
         }
 
+        BGLow firstLow = null;
         for (BGLow bgLow : detectedLowsAndHypos
         ) {
             if (!bgLow.isHypo() && bgLow.getLowLevelMins() != BGLow.NOT_FOUND) {
                 if (bgLow.getLowestBG() < 3 * 18) {
                     mTimeDetectConditionLastSatisfied = now();
-                    return bgLow;
+                    if(firstLow == null || (firstLow.getLowLevelMins() > bgLow.getLowLevelMins()))
+                        firstLow = bgLow;
                 }
             }
         }
 
-        return null;
+        if(firstLow == null)
+            log.info("No imminent lows!");
+        else
+            log.info("Imminent low reaching "+firstLow.getLowestBG());
+
+        return firstLow;
     }
 
     private boolean lowTTRunning() {
@@ -466,7 +474,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     }
                     if (lowLevelMins != BGLow.NOT_FOUND) {
                         BGLow low = new BGLow(getSource(prediction), false, lowLevelMins, lowestBG, lowestBGMins);
-                        log.info("Found LOW: " + low.getSource() + " LOW@" + low.getLowLevelMins() + "(" + low.getLowestBG() + "@" + low.getLowestBGMins() + ")");
+                        log.info("Found LOW: " + low.getSource() + "@" + low.getLowLevelMins() + "(" + low.getLowestBG() + "@" + low.getLowestBGMins() + ")");
                         detectedLowsAndHypos.add(low);
                     }
                     if (alertLevelMins != BGLow.NOT_FOUND) {
@@ -496,7 +504,7 @@ public class HypoPredictorPlugin extends PluginBase {
         int detectionHorizon = SP.getInt(R.string.key_hypoppred_horizon, 20);
         long predTimeMins = (long) mBgFit.belowThresholdAt(detectionThreshold, detectionHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, 60);
+            double lowestBG = mBgFit.minimum(predTimeMins, detectionHorizon);
             long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, detectionHorizon);
             log.info("Found LOW (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", false, predTimeMins, lowestBG, timeLowestBG));
@@ -508,8 +516,8 @@ public class HypoPredictorPlugin extends PluginBase {
         int alertHorizon = SP.getInt(R.string.key_hypoppred_alert_horizon, 20);
         predTimeMins = (long) mBgFit.belowThresholdAt(alertThreshold, alertHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, 60);
-            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, detectionHorizon);
+            double lowestBG = mBgFit.minimum(predTimeMins, alertHorizon);
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, alertHorizon);
             log.info("Found hypo (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", true, predTimeMins, lowestBG, timeLowestBG));
         }
@@ -645,7 +653,7 @@ public class HypoPredictorPlugin extends PluginBase {
             long predTimeMins = (long) mBgFitLin.belowThresholdAt(detectionThreshold, detectionHorizon);
 
             // LOW detected within horizon => try a more detailed fit using exponential
-            if (predTimeMins > 0) {
+            if (predTimeMins >= 0) {
                 log.info("Switching to exponential function (linear fit -> LOW in " + predTimeMins + " minutes)");
                 try {
                     mBgFit = mBgFitExp.fit(bgReadings);

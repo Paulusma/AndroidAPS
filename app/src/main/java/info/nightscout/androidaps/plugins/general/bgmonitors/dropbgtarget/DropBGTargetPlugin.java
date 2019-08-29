@@ -143,8 +143,7 @@ public class DropBGTargetPlugin extends PluginBase {
                     startTT(ttTargetLevel, duration);
                 } else
                     log.info("Can't start TT (there is another TT running)");
-            } else
-                log.info("Precondition not satisfied");
+            };
 
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -159,6 +158,7 @@ public class DropBGTargetPlugin extends PluginBase {
         long frameEnd = SP.getLong(R.string.key_droptarget_window_to, 0L);
         int time = Profile.secondsFromMidnight() / 60;
         if (useFrame && (time < frameStart || time > frameEnd)) {
+            log.info("Outside of timeframe");
             return false;
         }
 
@@ -171,8 +171,10 @@ public class DropBGTargetPlugin extends PluginBase {
                 && mLastStatus.glucose > 4 * 18 && mLastStatus.glucose < 8 * 18) {
 
             mTimeLastStableBG = now();
+            log.info("Precondition satisfied");
             return true;
         }
+        log.info("Precondition NOT satisfied");
         return false;
     }
 
