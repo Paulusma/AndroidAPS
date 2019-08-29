@@ -64,7 +64,7 @@ public class AlarmSoundService extends Service {
       //      player.setVolume(100, 100);
             if(volumeBeforeAlert == -1) { //TODO test operation whit 2 or more simultaneous notifications
                 volumeBeforeAlert = manager.getStreamVolume(AudioManager.STREAM_MUSIC);
-                int index = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                int index = (int)manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)/2;
                 manager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0);
             }
         }
