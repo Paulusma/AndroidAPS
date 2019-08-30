@@ -65,7 +65,7 @@ public class DropBGTargetPlugin extends PluginBase {
         MainApp.bus().register(this);
         super.onStart();
 
-        if (isEnabled(PluginType.GENERAL)) return;
+        if (!isEnabled(PluginType.GENERAL)) return;
 
         try {
             // Check after AndroidAPS restart if we had a TT running and sync with that

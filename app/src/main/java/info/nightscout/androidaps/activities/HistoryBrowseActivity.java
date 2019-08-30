@@ -297,6 +297,9 @@ public class HistoryBrowseActivity extends AppCompatActivity {
             graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d);
         }
 
+        // add target line
+        graphData.addTargetLine(fromTime, toTime, profile);
+
         // **** NOW line ****
         graphData.addNowLine(pointer);
 
