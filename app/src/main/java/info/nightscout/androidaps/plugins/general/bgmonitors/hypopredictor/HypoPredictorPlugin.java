@@ -16,6 +16,7 @@ import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
+import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.events.EventTreatmentChange;
@@ -141,7 +142,7 @@ public class HypoPredictorPlugin extends PluginBase {
     @SuppressWarnings("unused")
     public synchronized void onEventAutosensCalculationFinished(final EventAutosensCalculationFinished ev) {
         try {
-            if (!isEnabled(PluginType.GENERAL) || !initState(true)) return;
+            if (!isEnabled(PluginType.GENERAL)|| !(ev.cause instanceof EventNewBG) || !initState(true)) return;
             executeCheck();
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -180,6 +181,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
                     ev.isChanged(R.string.key_hypoppred_window_from) ||
+                    ev.isChanged(R.string.key_hypoppred_aaps) ||
                     ev.isChanged(R.string.key_hypoppred_algorithm) ||
                     ev.isChanged(R.string.key_hypoppred_horizon) ||
                     ev.isChanged(R.string.key_hypoppred_waittime)) {
@@ -218,8 +220,9 @@ public class HypoPredictorPlugin extends PluginBase {
 
             // Gather predicted LOWs & hypo's
             detectedLowsAndHypos.clear();
-            gatherPredictions(detectedLowsAndHypos);
-            if (SP.getBoolean(R.string.key_hypoppred_algorithm, false))
+            if (SP.getBoolean(R.string.key_hypoppred_aaps, true))
+                gatherPredictions(detectedLowsAndHypos);
+            if (SP.getBoolean(R.string.key_hypoppred_algorithm, true))
                 gatherAlgoPredictions(detectedLowsAndHypos);
 
             BGLow low = impendingLowBGDetected(detectedLowsAndHypos);
@@ -310,16 +313,16 @@ public class HypoPredictorPlugin extends PluginBase {
             if (!bgLow.isHypo() && bgLow.getLowLevelMins() != BGLow.NOT_FOUND) {
                 if (bgLow.getLowestBG() < 3 * 18) {
                     mTimeDetectConditionLastSatisfied = now();
-                    if(firstLow == null || (firstLow.getLowLevelMins() > bgLow.getLowLevelMins()))
+                    if (firstLow == null || (firstLow.getLowLevelMins() > bgLow.getLowLevelMins()))
                         firstLow = bgLow;
                 }
             }
         }
 
-        if(firstLow == null)
-            log.info("No imminent lows!");
+        if (firstLow == null)
+            log.info("BG not expected to fall below 54");
         else
-            log.info("Imminent low reaching "+firstLow.getLowestBG());
+            log.info("Imminent low reaching " + firstLow.getLowestBG());
 
         return firstLow;
     }
@@ -634,6 +637,7 @@ public class HypoPredictorPlugin extends PluginBase {
     private void fitBGCurve(boolean forceNewFit) {
         List<BgReading> bgReadings = IobCobCalculatorPlugin.getPlugin().getBgReadings();
 
+        if (bgReadings == null || bgReadings.isEmpty()) return;
         BgReading bgr = bgReadings.get(0);
         if (!forceNewFit && bgr.date <= mLastBGFitted) {
             // No new BG readings: we're done
