@@ -1360,7 +1360,7 @@
     <string name="hypoppred_threshold_alert_summary">Give alert when BG value drops below this level</string>
     <string name="hypoppred_threshold_alert">Give alert when BG value drops below this level</string>
     <string name="key_hypoppred_threshold_alert">hypoppred_threshold_alert</string>
-    <string name="hypoppred_algorithm">Prediction algorithm</string>
+    <string name="hypoppred_algorithm">Algorithms</string>
     <string name="hypoppred_algorithm_steps_summary">Number of previous BG readings to base prediction on</string>
     <string name="key_hypoppred_algorithm_steps">hypoppred_algorithm_steps</string>
     <string name="hypoppred_algorithm_steps">Number of previous BG readings to base prediction on</string>
@@ -1368,8 +1368,8 @@
     <string name="hypoppred_algorithm_weight">Older BG readings weigh less by this factor</string>
     <string name="key_hypoppred_algorithm_weight">hypoppred_algorithm_weight</string>
     <string name="key_hypoppred_algorithm">hypoppred_algorithm</string>
-    <string name="hypoppred_algorithm_title">Include independent prediction based on observed BG only.</string>
-    <string name="hypoppred_algorithm_summary">As a default predicted BG values (IOB, COB, UAM, &#8230;) are used to find hypo\'s. Looking at only the observed BG\'s allows a prediction independent of the inner workings of AndroidAPS.</string>
+    <string name="hypoppred_algorithm_title">Prediction based on observed BG.</string>
+    <string name="hypoppred_algorithm_summary">Looking at only the observed BG\'s allows a prediction independent of the inner workings of AndroidAPS.</string>
     <string name="key_scale_insulin_activity">scale_insulin_activity</string>
     <string name="scale_insulin_activity">Scale of insulin activity on overview charts</string>
     <string name="key_hypoppred_horizon">hypoppred_algorithm_horizon</string>
@@ -1412,6 +1412,9 @@
     <string name="view_log">View log</string>
     <string name="create_log_file_failed">Create log file failed</string>
     <string name="not_support_on_this_device">Not supported on this device</string>
+    <string name="key_hypoppred_aaps">hypoppred_aaps</string>
+    <string name="hypoppred_aaps_title">Use AAPS predictions</string>
+    <string name="hypoppred_aaps_summary"><![CDATA[The AAPS predictions (IOB, COB,...) are used to predict lows & hypo\'s]]></string>
     <string-array name="logcat_spinner">
         <item>Verbose</item>
         <item>Debug</item>
