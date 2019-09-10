@@ -1415,6 +1415,8 @@
     <string name="key_hypoppred_aaps">hypoppred_aaps</string>
     <string name="hypoppred_aaps_title">Use AAPS predictions</string>
     <string name="hypoppred_aaps_summary"><![CDATA[The AAPS predictions (IOB, COB,...) are used to predict lows & hypo\'s]]></string>
+    <string name="key_hypoppred_units">hypopred_units</string>
+    <string name="key_droptarget_units">droptarget_units</string>
     <string-array name="logcat_spinner">
         <item>Verbose</item>
         <item>Debug</item>

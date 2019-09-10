@@ -5,6 +5,7 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.IobTotal;
@@ -13,6 +14,7 @@ import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.events.EventProfileNeedsUpdate;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
@@ -113,12 +115,34 @@ public class DropBGTargetPlugin extends PluginBase {
         try {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
 
+            if (ev.isChanged(R.string.key_droptarget_TT_bg)) {
+                SP.putString(R.string.key_droptarget_units, mCurrentProfile.getUnits());
+            }
+
             if (ev.isChanged(R.string.key_droptarget_TT_bg) ||
                     ev.isChanged(R.string.key_droptarget_24hwindow) ||
                     ev.isChanged(R.string.key_droptarget_window_to) ||
                     ev.isChanged(R.string.key_droptarget_window_from) ||
                     ev.isChanged(R.string.key_droptarget_waittime)) {
                 executeCheck();
+            }
+        } catch (Exception e) {
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    @Subscribe
+    public void onEventProfileNeedsUpdate(EventProfileNeedsUpdate ignored) {
+        try {
+            log.info(">>>");
+            if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
+
+            // Convert BG type preference settings to current units
+            if (!SP.getString(R.string.key_droptarget_units, Constants.MGDL).equals(mCurrentProfile.getUnits())) {
+
+                double bg = SP.getDouble(R.string.key_droptarget_TT_bg, 0.0);
+                bg = bg * (Constants.MGDL.equals(mCurrentProfile.getUnits()) ? Constants.MMOLL_TO_MGDL : Constants.MGDL_TO_MMOLL);
+                SP.putDouble(R.string.key_droptarget_TT_bg, bg);
             }
         } catch (Exception e) {
             log.error("Unhandled exception", e);

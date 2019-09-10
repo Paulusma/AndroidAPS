@@ -21,8 +21,6 @@ import android.widget.RadioButton;
 
 import com.google.common.base.Joiner;
 
-import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +38,8 @@ import info.nightscout.androidaps.db.DatabaseHelper;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.interfaces.Constraint;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.treatments.CarbsGenerator;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -68,6 +68,8 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
     private NumberPicker editCarbs;
     private Integer maxCarbs;
 
+    private Double mealCarbs;
+
     private EditText notesEdit;
 
     //one shot guards
@@ -77,6 +79,12 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
     public NewCarbsDialog() {
         HandlerThread mHandlerThread = new HandlerThread(NewCarbsDialog.class.getSimpleName());
         mHandlerThread.start();
+    }
+
+    public NewCarbsDialog setInitialValues(Double _carbs) {
+        mealCarbs = _carbs;
+
+        return this;
     }
 
     final private TextWatcher textWatcher = new TextWatcher() {
@@ -137,8 +145,13 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
 
         maxCarbs = MainApp.getConstraintChecker().getMaxCarbsAllowed().value();
 
+        Integer maxCarbs = MainApp.getConstraintChecker().getMaxCarbsAllowed().value();
+        if (mealCarbs > maxCarbs) {
+            mealCarbs = maxCarbs.doubleValue();
+        }
+
         editCarbs = view.findViewById(R.id.newcarb_carbsamount);
-        editCarbs.setParams(0d, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
+        editCarbs.setParams(mealCarbs, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
 
         Button fav1Button = view.findViewById(R.id.newcarbs_plus1);
         fav1Button.setOnClickListener(this);

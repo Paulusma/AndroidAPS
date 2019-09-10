@@ -38,6 +38,8 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
+
 import info.nightscout.androidaps.activities.AgreementActivity;
 import info.nightscout.androidaps.activities.HistoryBrowseActivity;
 import info.nightscout.androidaps.activities.PreferencesActivity;
@@ -48,12 +50,9 @@ import info.nightscout.androidaps.events.EventFeatureRunning;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventRefreshGui;
 import info.nightscout.androidaps.interfaces.PluginBase;
-import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
-import info.nightscout.androidaps.plugins.general.versionChecker.VersionCheckerUtilsKt;
 import info.nightscout.androidaps.setupwizard.SetupWizardActivity;
 import info.nightscout.androidaps.tabs.TabPageAdapter;
 import info.nightscout.androidaps.utils.AndroidPermission;
@@ -72,11 +71,12 @@ public class MainActivity extends AppCompatActivity {
 
     private MenuItem pluginPreferencesMenuItem;
 
-    private static Context context;
-    public static MainActivity the;
-    public static Context getAppContext() {
-        return MainActivity.context;
+    // weakreference prevents memory leak https://stackoverflow.com/questions/53781475/using-singleton-mainactivity
+    private static WeakReference<MainActivity> the;
+    public static MainActivity instance() {
+        return the.get();
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         if (L.isEnabled(L.CORE))
             log.debug("onCreate");
 
+        the = new WeakReference<>(this);
         Iconify.with(new FontAwesomeModule());
         LocaleHelper.onCreate(this, "en");
 

@@ -2,8 +2,6 @@ package info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor;
 
 
 class BGLow {
-    public static final long NOT_FOUND = 1000L;
-
     private boolean isHypo;
     private long lowLevelMins;
     private double lowestBG;
