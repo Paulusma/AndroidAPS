@@ -285,9 +285,9 @@ public class HypoPredictorPlugin extends PluginBase {
             // Hypo alert message
             BGLow hypo = getImminentHypo(detectedLowsAndHypos);
             if (hypo != null) {
-//todo                if (hypo.getLowestBG() >= 3 * 18)
-//todo                    log.info("BG not expected to fall below " + Profile.fromMgdlToUnits(hypo.getLowestBG(), mCurrentProfile.getUnits()));
-//todo                else
+                if (hypo.getLowestBG() >= 3 * 18)
+                    log.info("BG not expected to fall below " + Profile.fromMgdlToUnits(hypo.getLowestBG(), mCurrentProfile.getUnits()));
+                else
                     executeHypoAlert(hypo);
             } else
                 log.info("No imminent hypo");
