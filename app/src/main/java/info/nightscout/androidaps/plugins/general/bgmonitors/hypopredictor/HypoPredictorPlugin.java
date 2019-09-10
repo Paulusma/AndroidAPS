@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import info.nightscout.androidaps.Config;
+import info.nightscout.androidaps.Constants;
+import info.nightscout.androidaps.MainActivity;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
@@ -18,6 +20,7 @@ import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.events.EventProfileNeedsUpdate;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.events.EventTreatmentChange;
 import info.nightscout.androidaps.interfaces.PluginBase;
@@ -32,8 +35,10 @@ import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.algor
 import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.algorithm.LinearBGCurveFitter;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
+import info.nightscout.androidaps.plugins.general.overview.dialogs.NewCarbsDialog;
 import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.general.overview.notifications.NotificationWithAction;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
@@ -52,17 +57,17 @@ import static info.nightscout.androidaps.utils.DateUtil.now;
  * <p>
  * * detects if BG falls below detection threshold in near future
  * - threshold and detection horizon are preferences
- * - uses AAPS BG predictions to determine BG below threshold. IOB prediction is excluded when COB
+ * - optionally uses AAPS BG predictions to determine BG below threshold. IOB prediction is excluded when COB
  * - optionally fits curve to observed BG's for independent LOW detection
  * - optionally detection can be limited to a specific time period (instead of 24h)
  * * tries to prevent LOW by starting a LOW TT
  * - LOW TT level is preference
  * - LOW TT wil run for a certain time after LOW is no longer detected (preference)
  * - does not start  prevention when:
- * 'eating soon' TT is running
- * future carbs present within next hour
- * recent BG is rising again (delta and short_avgdelta both > 5)
- * expected lowest BG > 3*18 mg/dl
+ *    'eating soon' TT is running
+ *    future carbs present within next hour
+ *    recent BG is rising again (delta and short_avgdelta both > 5)
+ *    expected lowest BG > 3*18 mg/dl
  * - LOW TT wil also not be started if currently a TT is running with higher level then LOW TT level
  * - if a TT was running prior to starting LOW TT it is reinstated after LOW TT ends
  * * will alert user if a hypo is imminent
@@ -142,7 +147,8 @@ public class HypoPredictorPlugin extends PluginBase {
     @SuppressWarnings("unused")
     public synchronized void onEventAutosensCalculationFinished(final EventAutosensCalculationFinished ev) {
         try {
-            if (!isEnabled(PluginType.GENERAL)|| !(ev.cause instanceof EventNewBG) || !initState(true)) return;
+            if (!isEnabled(PluginType.GENERAL) || !(ev.cause instanceof EventNewBG) || !initState(true))
+                return;
             executeCheck();
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -178,6 +184,11 @@ public class HypoPredictorPlugin extends PluginBase {
             if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
 
             if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
+                    ev.isChanged(R.string.key_hypoppred_threshold_alert)) {
+                SP.putString(R.string.key_hypoppred_units, mCurrentProfile.getUnits());
+            }
+
+            if (ev.isChanged(R.string.key_hypoppred_threshold_bg) ||
                     ev.isChanged(R.string.key_hypoppred_24hwindow) ||
                     ev.isChanged(R.string.key_hypoppred_window_to) ||
                     ev.isChanged(R.string.key_hypoppred_window_from) ||
@@ -195,6 +206,31 @@ public class HypoPredictorPlugin extends PluginBase {
                     ev.isChanged(R.string.key_hypoppred_alert_horizon)) {
                 SP.putLong("nextHypoAlarm", System.currentTimeMillis());
                 executeCheck();
+            }
+        } catch (Exception e) {
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    @Subscribe
+    public void onEventProfileNeedsUpdate(EventProfileNeedsUpdate ignored) {
+        try {
+            if (!isEnabled(PluginType.GENERAL) || !initState(false)) return;
+
+            // Convert BG type preference settings to current units
+            if (!SP.getString(R.string.key_hypoppred_units, Constants.MGDL).equals(mCurrentProfile.getUnits())) {
+
+                double bg = SP.getDouble(R.string.key_hypoppred_threshold_bg, 0.0);
+                bg = bg * (Constants.MGDL.equals(mCurrentProfile.getUnits()) ? Constants.MMOLL_TO_MGDL : Constants.MGDL_TO_MMOLL);
+                SP.putDouble(R.string.key_hypoppred_threshold_bg, bg);
+
+                bg = SP.getDouble(R.string.key_hypoppred_threshold_alert, 0.0);
+                bg = bg * (Constants.MGDL.equals(mCurrentProfile.getUnits()) ? Constants.MMOLL_TO_MGDL : Constants.MGDL_TO_MMOLL);
+                SP.putDouble(R.string.key_hypoppred_threshold_alert, bg);
+
+                bg = SP.getDouble(R.string.key_hypoppred_TT_bg, 0.0);
+                bg = bg * (Constants.MGDL.equals(mCurrentProfile.getUnits()) ? Constants.MMOLL_TO_MGDL : Constants.MGDL_TO_MMOLL);
+                SP.putDouble(R.string.key_hypoppred_TT_bg, bg);
             }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -249,9 +285,9 @@ public class HypoPredictorPlugin extends PluginBase {
             // Hypo alert message
             BGLow hypo = getImminentHypo(detectedLowsAndHypos);
             if (hypo != null) {
-                if (hypo.getLowestBG() >= 3 * 18)
-                    log.info("BG not expected to fall below " + Profile.fromMgdlToUnits(hypo.getLowestBG(), mCurrentProfile.getUnits()));
-                else
+//todo                if (hypo.getLowestBG() >= 3 * 18)
+//todo                    log.info("BG not expected to fall below " + Profile.fromMgdlToUnits(hypo.getLowestBG(), mCurrentProfile.getUnits()));
+//todo                else
                     executeHypoAlert(hypo);
             } else
                 log.info("No imminent hypo");
@@ -298,19 +334,10 @@ public class HypoPredictorPlugin extends PluginBase {
             return null;
         }
 
-        // Currently already below threshold?
-        double detectionThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
-                , mCurrentProfile.getUnits());
-        if (mLastStatus.glucose < detectionThreshold) {
-            mTimeDetectConditionLastSatisfied = now();
-            log.info("Already below LOW threshold");
-            return new BGLow("ACT", false, 0, 0, BGLow.NOT_FOUND);
-        }
-
         BGLow firstLow = null;
         for (BGLow bgLow : detectedLowsAndHypos
         ) {
-            if (!bgLow.isHypo() && bgLow.getLowLevelMins() != BGLow.NOT_FOUND) {
+            if (!bgLow.isHypo() && bgLow.getLowLevelMins() != -1) {
                 if (bgLow.getLowestBG() < 3 * 18) {
                     mTimeDetectConditionLastSatisfied = now();
                     if (firstLow == null || (firstLow.getLowLevelMins() > bgLow.getLowLevelMins()))
@@ -323,6 +350,18 @@ public class HypoPredictorPlugin extends PluginBase {
             log.info("BG not expected to fall below 54");
         else
             log.info("Imminent low reaching " + firstLow.getLowestBG());
+
+
+        // Currently already below threshold?
+        double detectionThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
+                , mCurrentProfile.getUnits());
+        if (mLastStatus.glucose < detectionThreshold) {
+            mTimeDetectConditionLastSatisfied = now();
+            log.info("Already below LOW threshold");
+            return new BGLow("ACT", false, 0, (firstLow != null)?firstLow.getLowestBG():0.0d,
+                    (firstLow!=null)?firstLow.getLowestBGMins():-1);
+        }
+
 
         return firstLow;
     }
@@ -439,8 +478,8 @@ public class HypoPredictorPlugin extends PluginBase {
             for (int i = 0; i < predictions.size(); i++) {
                 prediction = predictions.get(i);
                 if (prediction.isIOBPrediction && skipIOB) continue;
-                long lowLevelMins = BGLow.NOT_FOUND;
-                long alertLevelMins = BGLow.NOT_FOUND;
+                long lowLevelMins = -1;
+                long alertLevelMins = -1;
                 long lowestBGMins;
                 double lowestBG;
 
@@ -452,19 +491,19 @@ public class HypoPredictorPlugin extends PluginBase {
                         && predTimeMins < alertHorizon)
                     alertLevelMins = predTimeMins;
 
-                if (lowLevelMins != BGLow.NOT_FOUND || alertLevelMins != BGLow.NOT_FOUND) {
+                if (lowLevelMins != -1 || alertLevelMins != -1) {
                     lowestBG = prediction.value;
                     lowestBGMins = predTimeMins;
                     while (++i < predictions.size() && sameType(prediction, predictions.get(i))) {
                         BgReading later = predictions.get(i);
                         predTimeMins = (later.date - baseTime) / 1000 / 60;
 
-                        if (lowLevelMins == BGLow.NOT_FOUND
+                        if (lowLevelMins == -1
                                 && later.value <= detectionThreshold
                                 && predTimeMins < detectionHorizon) {
                             lowLevelMins = predTimeMins;
                         }
-                        if (alertLevelMins == BGLow.NOT_FOUND
+                        if (alertLevelMins == -1
                                 && later.value <= alertThreshold
                                 && predTimeMins < alertHorizon) {
                             alertLevelMins = predTimeMins;
@@ -475,12 +514,12 @@ public class HypoPredictorPlugin extends PluginBase {
                             lowestBGMins = (later.date - baseTime) / 1000 / 60;
                         }
                     }
-                    if (lowLevelMins != BGLow.NOT_FOUND) {
+                    if (lowLevelMins != -1) {
                         BGLow low = new BGLow(getSource(prediction), false, lowLevelMins, lowestBG, lowestBGMins);
                         log.info("Found LOW: " + low.getSource() + "@" + low.getLowLevelMins() + "(" + low.getLowestBG() + "@" + low.getLowestBGMins() + ")");
                         detectedLowsAndHypos.add(low);
                     }
-                    if (alertLevelMins != BGLow.NOT_FOUND) {
+                    if (alertLevelMins != -1) {
                         BGLow hypo = new BGLow(getSource(prediction), true, alertLevelMins, lowestBG, lowestBGMins);
                         log.info("Found hypo: " + hypo.getSource() + "@" + hypo.getLowLevelMins() + "(" + hypo.getLowestBG() + "@" + hypo.getLowestBGMins() + ")");
                         detectedLowsAndHypos.add(hypo);
@@ -499,16 +538,16 @@ public class HypoPredictorPlugin extends PluginBase {
         }
 
         // Determine intersection with LOW line.
-        // Note regarding time of lowest BG:  since exponential fits are always descending this will be 60 mins. This is not
-        // realistic in cases where the fit is very shallow so an error of +/- 4.5 in BG is assumed. The effect of this is that
-        // for very shallow fits the time of lowest BG will be moved close to 0 while for large drops it will remain close to 60.
+        // Note regarding time of lowest BG:  since exponential fits are always descending this will be 120 mins. This is not
+        // realistic in cases where the fit is very shallow so an error of +/- 4.5 mg/dl in BG is assumed. The effect of this is that
+        // for very shallow curves the time of lowest BG will be moved close to 0 while for large drops it will remain close to 120.
         double detectionThreshold = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0d)
                 , mCurrentProfile.getUnits());
         int detectionHorizon = SP.getInt(R.string.key_hypoppred_horizon, 20);
         long predTimeMins = (long) mBgFit.belowThresholdAt(detectionThreshold, detectionHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, detectionHorizon);
-            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, detectionHorizon);
+            double lowestBG = mBgFit.minimum(predTimeMins, 120);
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 120);
             log.info("Found LOW (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", false, predTimeMins, lowestBG, timeLowestBG));
         }
@@ -519,8 +558,8 @@ public class HypoPredictorPlugin extends PluginBase {
         int alertHorizon = SP.getInt(R.string.key_hypoppred_alert_horizon, 20);
         predTimeMins = (long) mBgFit.belowThresholdAt(alertThreshold, alertHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, alertHorizon);
-            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, alertHorizon);
+            double lowestBG = mBgFit.minimum(predTimeMins, 120);
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 120);
             log.info("Found hypo (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", true, predTimeMins, lowestBG, timeLowestBG));
         }
@@ -536,7 +575,7 @@ public class HypoPredictorPlugin extends PluginBase {
             return null;
         }
 
-        long hypoMins = BGLow.NOT_FOUND;
+        long hypoMins = -1;
         BGLow firstHypo = null;
         for (BGLow bgLow : detectedLowsAndHypos
         ) {
@@ -553,7 +592,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 return new BGLow("ACT", true, 0, firstHypo.getLowestBG(), firstHypo.getLowestBGMins());
             } else {
                 log.info("Hypo - ACT (?@?)");
-                return new BGLow("ACT", true, 0, 0.0, 0);
+                return new BGLow("ACT", true, 0, 0.0, -1);
             }
         }
 
@@ -572,17 +611,17 @@ public class HypoPredictorPlugin extends PluginBase {
         if (SP.getLong("nextHypoAlarm", 0L) <= System.currentTimeMillis()) {
             int gramCarbs = 3;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
-            if (hypo.getLowestBG() > 0.0d) {
+            if (hypo.getLowestBGMins() != -1) {
                 double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 0.0d),
                         mCurrentProfile.getUnits());
                 double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
                 gramCarbs += (int) (mCurrentProfile.getIc() * (hypoAlertLevel - hypo.getLowestBG()) / sens);
 
-                // Correct for recent treatment
+                // Correct for recent hypo carb intake
+                //TODO should start carbs task after dismiss button. Recent == carbs tasks after first hypo warning
                 if (mCobInfo.displayCob != null)
                     gramCarbs = gramCarbs - mCobInfo.displayCob.intValue();
             }
-            Notification n;
             String sMins, sCarbs = "";
             if (gramCarbs > 0)
                 sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, gramCarbs);
@@ -590,10 +629,14 @@ public class HypoPredictorPlugin extends PluginBase {
                 sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
             else
                 sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
-            n = new Notification(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
+            NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
             n.soundId = R.raw.urgentalarm;
-            SP.putLong("nextHypoAlarm", System.currentTimeMillis() + 15 * 60 * 1000);
+            double ncGrams = gramCarbs>0?gramCarbs:0.0d;
+            n.action(MainApp.gs(R.string.request), () ->
+                    new NewCarbsDialog().setInitialValues(ncGrams).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
             MainApp.bus().post(new EventNewNotification(n));
+            SP.putLong("nextHypoAlarm", System.currentTimeMillis() + 15 * 60 * 1000);
+
             if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
                 NSUpload.uploadError(n.text);
             }
