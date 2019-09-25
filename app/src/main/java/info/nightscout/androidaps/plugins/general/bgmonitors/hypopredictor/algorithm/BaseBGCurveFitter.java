@@ -31,6 +31,8 @@ abstract public class BaseBGCurveFitter extends AbstractCurveFitter implements P
     private BaseBGCurveFitter() {
     }
 
+    public double[] getParms(){return mParms;}
+
     protected BaseBGCurveFitter(int size) {
         mNofParms = size;
     }
