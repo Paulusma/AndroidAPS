@@ -68,7 +68,8 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
     private NumberPicker editCarbs;
     private Integer maxCarbs;
 
-    private Double mealCarbs;
+    private Double mealCarbs = 0.0d;
+    private String mealNotes = "";
 
     private EditText notesEdit;
 
@@ -81,8 +82,9 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
         mHandlerThread.start();
     }
 
-    public NewCarbsDialog setInitialValues(Double _carbs) {
+    public NewCarbsDialog setInitialValues(Double _carbs,String _notes) {
         mealCarbs = _carbs;
+        mealNotes = _notes;
 
         return this;
     }
@@ -168,6 +170,7 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
         LinearLayout notesLayout = view.findViewById(R.id.newcarbs_notes_layout);
         notesLayout.setVisibility(SP.getBoolean(R.string.key_show_notes_entry_dialogs, false) ? View.VISIBLE : View.GONE);
         notesEdit = view.findViewById(R.id.newcarbs_notes);
+        if(!mealNotes.equals(""))notesEdit.setText(mealNotes);
 
         BgReading bgReading = DatabaseHelper.actualBg();
         if (bgReading != null && bgReading.value < 72) {

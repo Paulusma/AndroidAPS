@@ -16,6 +16,9 @@ public interface BGCurveFitter {
     // Fit to this set of BG readings
     BGCurveFitter fit(List<BgReading> bgReadings);
 
+    // Get curve parametrisation
+    double[] getParms();
+
     /*
     To be implemented by descendants. NOTE: times are always in mins, and relative to the time curve was fitted
      */
