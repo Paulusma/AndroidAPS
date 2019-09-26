@@ -71,12 +71,6 @@ public class MainActivity extends AppCompatActivity {
 
     private MenuItem pluginPreferencesMenuItem;
 
-    // weakreference prevents memory leak https://stackoverflow.com/questions/53781475/using-singleton-mainactivity
-    private static WeakReference<MainActivity> the;
-    public static MainActivity instance() {
-        return the.get();
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
