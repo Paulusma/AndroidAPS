@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.PopupMenu;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
@@ -11,7 +12,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.PopupMenu;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -35,6 +35,7 @@ import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
+import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.T;
 
 public class HistoricDataActivity extends AppCompatActivity {
@@ -45,7 +46,6 @@ public class HistoricDataActivity extends AppCompatActivity {
     ImageButton chartButton;
 
     boolean showBasal = true;
-    boolean showIob, showCob, showDev, showRat, showActPrim, showActSec, showDevslope;
 
     HistoricGraphDataProviderPlugin dataProvider = HistoricGraphDataProviderPlugin.getPlugin();
 
@@ -218,7 +218,7 @@ public class HistoricDataActivity extends AppCompatActivity {
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, toTime);
 
-            if (showActPrim) {
+            if(SP.getBoolean("showactivityprimary", true)) {
                 graphData.addActivity(fromTime, toTime, false, 1d, dataProvider);
             }
 
@@ -226,7 +226,7 @@ public class HistoricDataActivity extends AppCompatActivity {
             graphData.addTreatments(fromTime, toTime, dataProvider);
 
             // add basal data
-            if (pump.getPumpDescription().isTempBasalCapable && showBasal) {
+            if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showhbasals", true)) {
                 graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d, dataProvider);
             }
 
@@ -248,32 +248,32 @@ public class HistoricDataActivity extends AppCompatActivity {
                 boolean useIAForScale = false;
                 boolean useDSForScale = false;
 
-                if (showIob) {
+                if (SP.getBoolean("showhiob", true)) {
                     useIobForScale = true;
-                } else if (showCob) {
+                } else if (SP.getBoolean("showhcob", true)) {
                     useCobForScale = true;
-                } else if (showDev) {
+                } else if (SP.getBoolean("showhdeviations", false)) {
                     useDevForScale = true;
-                } else if (showRat) {
+                } else if (SP.getBoolean("showhratios", false)) {
                     useRatioForScale = true;
-                } else if (showActSec) {
+                } else if (SP.getBoolean("showhactivitysecondary", false)) {
                     useIAForScale = true;
-                } else if (showDevslope) {
+                } else if (SP.getBoolean("showhdevslope", false)) {
                     useDSForScale = true;
                 }
 
-                if (showIob)
-                    secondGraphData.addIob(fromTime, toTime, useIobForScale, 1d, dataProvider);
-                if (showCob)
-                    secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d, dataProvider);
-                if (showDev)
-                    secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d, dataProvider);
-                if (showRat)
-                    secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d, dataProvider);
-                if (showActSec)
-                    secondGraphData.addActivity(fromTime, toTime, useIAForScale, useIAForScale ? 2d : 1d, dataProvider);
-                if (showDevslope)
-                    secondGraphData.addDeviationSlope(fromTime, toTime, useDSForScale, 1d, dataProvider);
+                if (SP.getBoolean("showhiob", true))
+                    secondGraphData.addIob(fromTime, toTime, useIobForScale, 1d,dataProvider);
+                if (SP.getBoolean("showhcob", true))
+                    secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d,dataProvider);
+                if (SP.getBoolean("showhdeviations", false))
+                    secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d,dataProvider);
+                if (SP.getBoolean("showhratios", false))
+                    secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d,dataProvider);
+                if(SP.getBoolean("showhactivitysecondary", true))
+                    secondGraphData.addActivity(fromTime, toTime, useIAForScale,useIAForScale ? 2d: 1d,dataProvider);
+                if (SP.getBoolean("showhdevslope", false) && MainApp.devBranch)
+                    secondGraphData.addDeviationSlope(fromTime, toTime, useDSForScale, 1d,dataProvider);
 
                 // **** NOW line ****
                 // set manual x bounds to have nice steps
@@ -282,14 +282,24 @@ public class HistoricDataActivity extends AppCompatActivity {
 
                 // do GUI update
                 runOnUiThread(() -> {
-                    if (showIob || showCob || showDev || showRat || showActSec || showDevslope) {
+                    if (SP.getBoolean("showhiob", true)
+                            || SP.getBoolean("showhcob", true)
+                            || SP.getBoolean("showheviations", false)
+                            || SP.getBoolean("showhratios", false)
+                            || SP.getBoolean("showhactivitysecondary", false)
+                            || SP.getBoolean("showhdevslope", false)) {
                         iobGraph.setVisibility(View.VISIBLE);
                     } else {
                         iobGraph.setVisibility(View.GONE);
                     }
                     // finally enforce drawing of graphs
                     graphData.performUpdate();
-                    if (showIob || showCob || showDev || showRat || showActSec || showDevslope)
+                    if (SP.getBoolean("showhiob", true)
+                            || SP.getBoolean("showhcob", true)
+                            || SP.getBoolean("showheviations", false)
+                            || SP.getBoolean("showhratios", false)
+                            || SP.getBoolean("showhactivitysecondary", false)
+                            || SP.getBoolean("showhdevslope", false))
                         secondGraphData.performUpdate();
                 });
             }).start();
@@ -298,117 +308,115 @@ public class HistoricDataActivity extends AppCompatActivity {
         }
     }
 
-
-
     private void setupChartMenu() {
         chartButton = (ImageButton) findViewById(R.id.overview_chartMenuButton);
         chartButton.setOnClickListener(v -> {
-            MenuItem item, dividerItem;
+            MenuItem item,dividerItem;
             CharSequence title;
             int titleMaxChars = 0;
             SpannableString s;
-            PopupMenu popup = new PopupMenu(v.getContext(), v);
+            android.support.v7.widget.PopupMenu popup = new PopupMenu(v.getContext(), v);
 
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.basal, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showBasal);
+            item.setChecked(SP.getBoolean("showhbasals", true));
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.ACTPRIM.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showActPrim);
+            item.setChecked(SP.getBoolean("showhactivityprimary", true));
 
             dividerItem = popup.getMenu().add("");
             dividerItem.setEnabled(false);
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.IOB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_iob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showIob);
+            item.setChecked(SP.getBoolean("showhiob", true));
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.COB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_cob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.cob, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showCob);
+            item.setChecked(SP.getBoolean("showhcob", true));
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.DEV.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_deviations));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.deviations, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showDev);
+            item.setChecked(SP.getBoolean("showhdeviations", false));
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.SEN.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_sensitivity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.ratio, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showRat);
+            item.setChecked(SP.getBoolean("showhratios", false));
 
             item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.ACTSEC.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars = title.length();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(showActSec);
+            item.setChecked(SP.getBoolean("showhactivitysecondary", true));
 
 
             if (MainApp.devBranch) {
                 item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
                 title = item.getTitle();
-                if (titleMaxChars < title.length()) titleMaxChars = title.length();
+                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.devslopepos, null)), 0, s.length(), 0);
                 item.setTitle(s);
                 item.setCheckable(true);
-                item.setChecked(showDevslope);
+                item.setChecked(SP.getBoolean("showhdevslope", false));
             }
 
             // Fairly good guestimate for required divider text size...
-            title = new String(new char[titleMaxChars + 10]).replace("\0", "_");
+            title = new String(new char[titleMaxChars+10]).replace("\0", "_");
             dividerItem.setTitle(title);
 
             popup.setOnMenuItemClickListener(item1 -> {
                 if (item1.getItemId() == OverviewFragment.CHARTTYPE.BAS.ordinal()) {
-                    showBasal = !item1.isChecked();
+                    SP.putBoolean("showhbasals", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.IOB.ordinal()) {
-                    showIob = !item1.isChecked();
+                    SP.putBoolean("showhiob", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.COB.ordinal()) {
-                    showCob = !item1.isChecked();
+                    SP.putBoolean("showhcob", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.DEV.ordinal()) {
-                    showDev = !item1.isChecked();
+                    SP.putBoolean("showhdeviations", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.SEN.ordinal()) {
-                    showRat = !item1.isChecked();
+                    SP.putBoolean("showhratios", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.ACTPRIM.ordinal()) {
-                    showActPrim = !item1.isChecked();
+                    SP.putBoolean("showhactivityprimary", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.ACTSEC.ordinal()) {
-                    showActSec = !item1.isChecked();
+                    SP.putBoolean("showhactivitysecondary", !item1.isChecked());
                 } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.DEVSLOPE.ordinal()) {
-                    showDevslope = !item1.isChecked();
+                    SP.putBoolean("showhdevslope", !item1.isChecked());
                 }
                 updateGUI("onGraphCheckboxesCheckedChanged");
                 return true;

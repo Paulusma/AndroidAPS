@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -218,8 +219,8 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
         if (!isEnabled(PluginType.GENERAL)) return;
 
-// TODO remove or use        if (mExecutor == null)
-//            mExecutor = Executors.newScheduledThreadPool(5);
+        if (mExecutor == null)
+            mExecutor = Executors.newScheduledThreadPool(3);
 
         Runnable historicDataUpdater = new Runnable() {
                 @Override
