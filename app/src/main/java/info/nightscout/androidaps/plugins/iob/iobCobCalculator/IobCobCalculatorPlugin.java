@@ -431,7 +431,7 @@ public class IobCobCalculatorPlugin extends PluginBase {
             time = roundUpTime(previous);
             AutosensData data = autosensDataTable.get(time);
             if (data != null) {
-                //log.debug(">>> AUTOSENSDATA Cache hit " + data.toString());
+                log.debug(">>> AUTOSENSDATA Cache hit " + data.toString());
                 return data;
             } else {
                 //log.debug(">>> AUTOSENSDATA Cache miss " + new Date(time).toLocaleString());
@@ -457,6 +457,32 @@ public class IobCobCalculatorPlugin extends PluginBase {
         }
     }
 
+
+    @NonNull
+    public CobInfo getCobInfo(long time) {
+        AutosensData autosensData = getAutosensData(time);
+        Double displayCob = null;
+        double futureCarbs = 0;
+        List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();  //TOD: on time
+
+        if (autosensData != null) {
+            displayCob = autosensData.cob;
+            for (Treatment treatment : treatments) {
+                if (!treatment.isValid) continue;
+                if (IobCobCalculatorPlugin.roundUpTime(treatment.date) > IobCobCalculatorPlugin.roundUpTime(autosensData.time)
+                        && treatment.date <= time && treatment.carbs > 0) {
+                    displayCob += treatment.carbs;
+                }
+            }
+        }
+        for (Treatment treatment : treatments) {
+            if (!treatment.isValid) continue;
+            if (treatment.date > time && treatment.carbs > 0) {
+                futureCarbs += treatment.carbs;
+            }
+        }
+        return new CobInfo(displayCob, futureCarbs);
+    }
 
     @NonNull
     public CobInfo getCobInfo(boolean _synchronized, String reason) {

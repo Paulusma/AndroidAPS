@@ -36,12 +36,13 @@ import info.nightscout.androidaps.events.EventCustomCalculationFinished;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
-import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
-import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventIobCalculationProgress;
+import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphDataHelper;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventIobCalculationProgress;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.T;
 
@@ -53,6 +54,8 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 
     boolean showBasal = true;
     boolean showIob, showCob, showDev, showRat, showActPrim, showActSec, showDevslope;
+
+    HistoricGraphDataHelper dataProvider = new HistoricGraphDataHelper();
 
 
     @BindView(R.id.historybrowse_date)
@@ -280,22 +283,24 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 //graphData.addBgReadings(fromTime, toTime, lowLine, highLine, (DetermineBasalResultAMA) finalLastRun.constraintsProcessed);
             ;
         else
-            graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
+            graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null,dataProvider);
 
         // set manual x bounds to have nice steps
         graphData.formatAxis(fromTime, toTime);
 
         if(showActPrim) {
-            graphData.addActivity(fromTime, toTime, false,1d);
+            graphData.addActivity(fromTime, toTime, false,1d,dataProvider);
         }
 
         // Treatments
-        graphData.addTreatments(fromTime, toTime);
+        graphData.addTreatments(fromTime, toTime,dataProvider);
 
         // add basal data
         if (pump.getPumpDescription().isTempBasalCapable && showBasal) {
-            graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d);
+            graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d,dataProvider);
         }
+
+        graphData.addTargetLine(fromTime, toTime, profile,dataProvider);
 
         // add target line
         graphData.addTargetLine(fromTime, toTime, profile,dataProvider);
@@ -330,17 +335,17 @@ public class HistoryBrowseActivity extends AppCompatActivity {
             }
 
             if (showIob)
-                secondGraphData.addIob(fromTime, toTime, useIobForScale, 1d);
+                secondGraphData.addIob(fromTime, toTime, useIobForScale, 1d,dataProvider);
             if (showCob)
-                secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d);
+                secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d,dataProvider);
             if (showDev)
-                secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d);
+                secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d,dataProvider);
             if (showRat)
-                secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d);
+                secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d,dataProvider);
             if (showActSec)
-                secondGraphData.addActivity(fromTime, toTime, useIAForScale, useIAForScale? 2d: 1d);
+                secondGraphData.addActivity(fromTime, toTime, useIAForScale, useIAForScale? 2d: 1d,dataProvider);
             if (showDevslope)
-                secondGraphData.addDeviationSlope(fromTime, toTime, useDSForScale, 1d);
+                secondGraphData.addDeviationSlope(fromTime, toTime, useDSForScale, 1d,dataProvider);
 
             // **** NOW line ****
             // set manual x bounds to have nice steps

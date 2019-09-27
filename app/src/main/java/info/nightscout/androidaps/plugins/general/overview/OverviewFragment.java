@@ -1461,7 +1461,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             final long now = System.currentTimeMillis();
 
-            //  ------------------ 1st graph
+            GraphDataProvider dataProvider = new HistoricGraphDataHelper();
+
+             //  ------------------ 1st graph
             if (L.isEnabled(L.OVERVIEW))
                 Profiler.log(log, from + " - 1st graph - START", updateGUIStart);
 
@@ -1473,9 +1475,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             // **** BG ****
             if (finalPredictionsAvailable && SP.getBoolean("showprediction", false)) {
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
-                        apsResult.getPredictions());
+                        apsResult.getPredictions(),dataProvider);
             } else
-                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null);
+                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null,dataProvider);
 
             if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
                     SP.getBoolean(R.string.key_hypoppred_algorithm, false)){// TODO: en verder: && SP.getBoolean("showprediction", false))
@@ -1485,19 +1487,19 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.formatAxis(fromTime, endTime);
 
             if(SP.getBoolean("showactivityprimary", true)) {
-                graphData.addActivity(fromTime, endTime, false,1d);
+                graphData.addActivity(fromTime, endTime, false,1d,dataProvider);
             }
 
             // Treatments
-            graphData.addTreatments(fromTime, endTime);
+            graphData.addTreatments(fromTime, endTime,dataProvider);
 
             // add basal data
             if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
-                graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+                graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d,dataProvider);
             }
 
             // add target line
-            graphData.addTargetLine(fromTime, toTime, profile);
+            graphData.addTargetLine(fromTime, toTime, profile,dataProvider);
 
             // **** NOW line ****
             graphData.addNowLine(now);
@@ -1530,17 +1532,17 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
 
             if (SP.getBoolean("showiob", true))
-                secondGraphData.addIob(fromTime, now, useIobForScale, 1d);
+                secondGraphData.addIob(fromTime, now, useIobForScale, 1d,dataProvider);
             if (SP.getBoolean("showcob", true))
-                secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d);
+                secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d,dataProvider);
             if (SP.getBoolean("showdeviations", false))
-                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d);
+                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d,dataProvider);
             if (SP.getBoolean("showratios", false))
-                secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d);
+                secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d,dataProvider);
             if(SP.getBoolean("showactivitysecondary", true))
-                secondGraphData.addActivity(fromTime, endTime, useIAForScale,useIAForScale ? 2d: 1d);
+                secondGraphData.addActivity(fromTime, endTime, useIAForScale,useIAForScale ? 2d: 1d,dataProvider);
             if (SP.getBoolean("showdevslope", false) && MainApp.devBranch)
-                secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d);
+                secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d,dataProvider);
 
             // **** NOW line ****
             // set manual x bounds to have nice steps

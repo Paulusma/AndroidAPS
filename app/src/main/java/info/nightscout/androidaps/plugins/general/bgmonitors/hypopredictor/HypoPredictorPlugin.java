@@ -315,7 +315,7 @@ public class HypoPredictorPlugin extends PluginBase {
         }
 
         // No LOW prevention if recent BG is rising
-        if (bgIsRising()) {
+        if (bgIsNotDropping()) {
             log.info("Skip detection - in LOW but BG rising");
             return null;
         }
@@ -566,7 +566,7 @@ public class HypoPredictorPlugin extends PluginBase {
         // Hypo but BG already rising fast => suppress alert
         double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 0.0d),
                 mCurrentProfile.getUnits());
-        if (mLastStatus.glucose <= hypoAlertLevel && bgIsRising()) {
+        if (mLastStatus.glucose <= hypoAlertLevel && bgIsNotDropping()) {
             log.info("Hypo in progress but BG rising");
             return null;
         }
@@ -666,10 +666,10 @@ public class HypoPredictorPlugin extends PluginBase {
     /*
         NOTE AAPS trends: > 17.5 DU, 10 to 17.5 SU, 5 to 10 FFU, 5 to -5 FLT, -5 to -10 FFD, -10 to -17.5 SD, < -17.5 DD
      */
-    private boolean bgIsRising() {
+    private boolean bgIsNotDropping() {
         return (mLastStatus != null
-                && (mLastStatus.delta > 5
-                && mLastStatus.short_avgdelta > 5));
+                && (mLastStatus.delta > 0
+                && mLastStatus.short_avgdelta > 0));
     }
 
     private boolean lastBGTrendIsRisingFast() {

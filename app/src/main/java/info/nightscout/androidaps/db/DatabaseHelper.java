@@ -45,6 +45,7 @@ import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphData;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventNewHistoryData;
@@ -82,6 +83,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public static final String DATABASE_INSIGHT_HISTORY_OFFSETS = "InsightHistoryOffsets";
     public static final String DATABASE_INSIGHT_BOLUS_IDS = "InsightBolusIDs";
     public static final String DATABASE_INSIGHT_PUMP_IDS = "InsightPumpIDs";
+    public static final String DATABASE_GRAPHDATA = "HistoricGraphData";
 
     private static final int DATABASE_VERSION = 11;
 
@@ -119,6 +121,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try {
             if (L.isEnabled(L.DATABASE))
                 log.info("onCreate");
+//todo TableUtils.dropTable(connectionSource, HistoricGraphData.class, true);
+            TableUtils.createTableIfNotExists(connectionSource, HistoricGraphData.class);
             TableUtils.createTableIfNotExists(connectionSource, TempTarget.class);
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
@@ -311,6 +315,10 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     // ------------------ getDao -------------------------------------------
 
+    private Dao<HistoricGraphData, Long> getDaoHistoricGraphData() throws SQLException {
+        return getDao(HistoricGraphData.class);
+    }
+
     private Dao<TempTarget, Long> getDaoTempTargets() throws SQLException {
         return getDao(TempTarget.class);
     }
@@ -375,17 +383,17 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             if (old == null) {
                 getDaoBgReadings().create(bgReading);
                 if (L.isEnabled(L.DATABASE))
-                    log.debug("BG: New record from: " + from + " " + bgReading.toString());
+                    log.info("BG: New record from: " + from + " " + bgReading.toString());
                 scheduleBgChange(bgReading);
                 return true;
             }
             if (!old.isEqual(bgReading)) {
                 if (L.isEnabled(L.DATABASE))
-                    log.debug("BG: Similiar found: " + old.toString());
+                    log.info("BG: Similiar found: " + old.toString());
                 old.copyFrom(bgReading);
                 getDaoBgReadings().update(old);
                 if (L.isEnabled(L.DATABASE))
-                    log.debug("BG: Updating record from: " + from + " New data: " + old.toString());
+                    log.info("BG: Updating record from: " + from + " New data: " + old.toString());
                 scheduleBgChange(bgReading);
                 return false;
             }
@@ -1209,6 +1217,23 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         return new ArrayList<ExtendedBolus>();
     }
 
+
+    public List<ExtendedBolus> getExtendedBolusDataFromTime(long from, long to, boolean ascending) {
+        try {
+            List<ExtendedBolus> extendedBoluses;
+            QueryBuilder<ExtendedBolus, Long> queryBuilder = getDaoExtendedBolus().queryBuilder();
+            queryBuilder.orderBy("date", ascending);
+            Where where = queryBuilder.where();
+            where.between("date", from, to);
+            PreparedQuery<ExtendedBolus> preparedQuery = queryBuilder.prepare();
+            extendedBoluses = getDaoExtendedBolus().query(preparedQuery);
+            return extendedBoluses;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<ExtendedBolus>();
+    }
+
     public void deleteExtendedBolusById(String _id) {
         ExtendedBolus stored = findExtendedBolusById(_id);
         if (stored != null) {
@@ -1789,4 +1814,33 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     }
 
     // ---------------- Food handling ---------------
+
+    // ---------------- HistoricGraphData handling ---------------
+
+    public List<HistoricGraphData> getHistoricGraphData(long from, long to) {
+        try {
+            Dao<HistoricGraphData, Long> daoHistoricGraphData = getDaoHistoricGraphData();
+            List<HistoricGraphData> historicGraphData;
+            QueryBuilder<HistoricGraphData, Long> queryBuilder = daoHistoricGraphData.queryBuilder();
+            queryBuilder.orderBy("date",true);
+            Where where = queryBuilder.where();
+            where.between("date", from, to);
+            PreparedQuery<HistoricGraphData> preparedQuery = queryBuilder.prepare();
+            historicGraphData = daoHistoricGraphData.query(preparedQuery);
+            return historicGraphData;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<HistoricGraphData>();
+    }
+
+    public void createOrUpdateHistoricGraphData(HistoricGraphData historicGraphData) {
+        try {
+            Dao<HistoricGraphData, Long> dao = getDaoHistoricGraphData();
+            dao.createOrUpdate(historicGraphData);
+        } catch (SQLException e) {
+            ToastUtils.showToastInUiThread(MainApp.instance(), "createOrUpdate-Exception");
+            log.error("Unhandled exception", e);
+        }
+    }
 }

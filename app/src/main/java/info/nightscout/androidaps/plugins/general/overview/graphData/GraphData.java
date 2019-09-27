@@ -71,10 +71,10 @@ public class GraphData {
         this.iobCobCalculatorPlugin = iobCobCalculatorPlugin;
     }
 
-    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions) {
+    public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions, GraphDataProvider gdp) {
         double maxBgValue = Double.MIN_VALUE;
         //bgReadingsArray = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, true);
-        bgReadingsArray = iobCobCalculatorPlugin.getBgReadings();
+        bgReadingsArray = gdp.getBGReadings(fromTime, toTime);
         List<DataPointWithLabelInterface> bgListArray = new ArrayList<>();
 
         if (bgReadingsArray == null || bgReadingsArray.size() == 0) {
@@ -177,7 +177,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addBasals(long fromTime, long toTime, double scale) {
+    public void addBasals(long fromTime, long toTime, double scale, GraphDataProvider gdp) {
         LineGraphSeries<ScaledDataPoint> basalsLineSeries;
         LineGraphSeries<ScaledDataPoint> absoluteBasalsLineSeries;
         LineGraphSeries<ScaledDataPoint> baseBasalsSeries;
@@ -197,7 +197,7 @@ public class GraphData {
         for (long time = fromTime; time < toTime; time += 60 * 1000L) {
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             if (profile == null) continue;
-            BasalData basalData = iobCobCalculatorPlugin.getBasalData(profile, time);
+            BasalData basalData = gdp.getBasal(time,profile);
             double baseBasalValue = basalData.basal;
             double absoluteLineValue = baseBasalValue;
             double tempBasalValue = 0;
@@ -286,7 +286,7 @@ public class GraphData {
         addSeries(absoluteBasalsLineSeries);
     }
 
-    public void addTargetLine(long fromTime, long toTime, Profile profile) {
+    public void addTargetLine(long fromTime, long toTime, Profile profile,GraphDataProvider gdp) {
         LineGraphSeries<DataPoint> targetsSeries;
 
         Scale targetsScale = new Scale();
@@ -304,7 +304,7 @@ public class GraphData {
         }
 
         for (long time = fromTime; time < toTime; time += 5 * 60 * 1000L) {
-            TempTarget tt = TreatmentsPlugin.getPlugin().getTempTargetFromHistory(time);
+            TempTarget tt = gdp.getTempTarget(time);
             double value;
             if (tt == null) {
                 value = (profile.getTargetLow(time) + profile.getTargetHigh(time)) / 2;
@@ -330,10 +330,10 @@ public class GraphData {
         addSeries(targetsSeries);
     }
 
-    public void addTreatments(long fromTime, long endTime) {
+    public void addTreatments(long fromTime, long endTime, GraphDataProvider gdp) {
         List<DataPointWithLabelInterface> filteredTreatments = new ArrayList<>();
 
-        List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+        List<Treatment> treatments = gdp.getTreatments(fromTime, endTime);
 
         for (int tx = 0; tx < treatments.size(); tx++) {
             Treatment t = treatments.get(tx);
@@ -344,7 +344,7 @@ public class GraphData {
         }
 
         // ProfileSwitch
-        List<ProfileSwitch> profileSwitches = TreatmentsPlugin.getPlugin().getProfileSwitchesFromHistory().getList();
+        List<ProfileSwitch> profileSwitches = gdp.getProfileSwitches(fromTime, endTime);
 
         for (int tx = 0; tx < profileSwitches.size(); tx++) {
             DataPointWithLabelInterface t = profileSwitches.get(tx);
@@ -354,7 +354,7 @@ public class GraphData {
 
         // Extended bolus
         if (!ConfigBuilderPlugin.getPlugin().getActivePump().isFakingTempsByExtendedBoluses()) {
-            List<ExtendedBolus> extendedBoluses = TreatmentsPlugin.getPlugin().getExtendedBolusesFromHistory().getList();
+            List<ExtendedBolus> extendedBoluses = gdp.getExtendedBoluses(fromTime,endTime);
 
             for (int tx = 0; tx < extendedBoluses.size(); tx++) {
                 DataPointWithLabelInterface t = extendedBoluses.get(tx);
@@ -366,7 +366,7 @@ public class GraphData {
         }
 
         // Careportal
-        List<CareportalEvent> careportalEvents = MainApp.getDbHelper().getCareportalEventsFromTime(fromTime - 6 * 60 * 60 * 1000, true);
+        List<CareportalEvent> careportalEvents = gdp.getcareportalEvents(fromTime,endTime);
 
         for (int tx = 0; tx < careportalEvents.size(); tx++) {
             DataPointWithLabelInterface t = careportalEvents.get(tx);
@@ -385,14 +385,14 @@ public class GraphData {
             return Profile.fromMgdlToUnits(100, units);
         for (int r = 0; r < bgReadingsArray.size(); r++) {
             BgReading reading = bgReadingsArray.get(r);
-            if (reading.date > date) continue;
+            if (reading.date > date || reading.value == 0) continue;
             return Profile.fromMgdlToUnits(reading.value, units);
         }
         return bgReadingsArray.size() > 0
                 ? Profile.fromMgdlToUnits(bgReadingsArray.get(0).value, units) : Profile.fromMgdlToUnits(100, units);
     }
 
-    public void addActivity(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addActivity(long fromTime, long toTime, boolean useForScale, double scale, GraphDataProvider gdp) {
         FixedLineGraphSeries<ScaledDataPoint> actSeriesHist;
         List<ScaledDataPoint> actArrayHist = new ArrayList<>();
         FixedLineGraphSeries<ScaledDataPoint> actSeriesPred;
@@ -406,7 +406,7 @@ public class GraphData {
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             double act = 0d;
             if (profile == null) continue;
-            total = iobCobCalculatorPlugin.calculateFromTreatmentsAndTempsSynchronized(time, profile);
+            total = gdp.getActivity(time,profile);
             act = total.activity;
 
             if(time<=now)
@@ -447,7 +447,7 @@ public class GraphData {
     
 
     // scale in % of vertical size (like 0.3)
-    public void addIob(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addIob(long fromTime, long toTime, boolean useForScale, double scale,GraphDataProvider gdp) {
         FixedLineGraphSeries<ScaledDataPoint> iobSeries;
         List<ScaledDataPoint> iobArray = new ArrayList<>();
         Double maxIobValueFound = Double.MIN_VALUE;
@@ -458,7 +458,7 @@ public class GraphData {
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             double iob = 0d;
             if (profile != null)
-                iob = iobCobCalculatorPlugin.calculateFromTreatmentsAndTempsSynchronized(time, profile).iob;
+                iob = gdp.getIob(time,profile);
             if (Math.abs(lastIob - iob) > 0.02) {
                 if (Math.abs(lastIob - iob) > 0.2)
                     iobArray.add(new ScaledDataPoint(time, lastIob, iobScale));
@@ -487,7 +487,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addCob(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addCob(long fromTime, long toTime, boolean useForScale, double scale, GraphDataProvider gdp) {
         List<DataPointWithLabelInterface> minFailoverActiveList = new ArrayList<>();
         FixedLineGraphSeries<ScaledDataPoint> cobSeries;
         List<ScaledDataPoint> cobArray = new ArrayList<>();
@@ -496,7 +496,7 @@ public class GraphData {
         Scale cobScale = new Scale();
 
         for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
-            AutosensData autosensData = iobCobCalculatorPlugin.getAutosensData(time);
+            AutosensData autosensData = gdp.getCob(time);
             if (autosensData != null) {
                 int cob = (int) autosensData.cob;
                 if (cob != lastCob) {
@@ -538,7 +538,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addDeviations(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addDeviations(long fromTime, long toTime, boolean useForScale, double scale, GraphDataProvider gdp) {
         class DeviationDataPoint extends ScaledDataPoint {
             public int color;
 
@@ -554,7 +554,7 @@ public class GraphData {
         Scale devScale = new Scale();
 
         for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
-            AutosensData autosensData = iobCobCalculatorPlugin.getAutosensData(time);
+            AutosensData autosensData = gdp.getDeviations(time);
             if (autosensData != null) {
                 int color = MainApp.gc(R.color.deviationblack); // "="
                 if (autosensData.type.equals("") || autosensData.type.equals("non-meal")) {
@@ -604,7 +604,7 @@ public class GraphData {
         Scale ratioScale = new Scale();
 
         for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
-            AutosensData autosensData = iobCobCalculatorPlugin.getAutosensData(time);
+            AutosensData autosensData = gdp.getRatio(time);
             if (autosensData != null) {
                 ratioArray.add(new ScaledDataPoint(time, autosensData.autosensResult.ratio - 1, ratioScale));
                 maxRatioValueFound = Math.max(maxRatioValueFound, autosensData.autosensResult.ratio - 1);
@@ -630,7 +630,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addDeviationSlope(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addDeviationSlope(long fromTime, long toTime, boolean useForScale, double scale, GraphDataProvider gdp) {
         LineGraphSeries<ScaledDataPoint> dsMaxSeries;
         LineGraphSeries<ScaledDataPoint> dsMinSeries;
         List<ScaledDataPoint> dsMaxArray = new ArrayList<>();
@@ -641,7 +641,7 @@ public class GraphData {
         Scale dsMinScale = new Scale();
 
         for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
-            AutosensData autosensData = iobCobCalculatorPlugin.getAutosensData(time);
+            AutosensData autosensData = gdp.getSlope(time);
             if (autosensData != null) {
                 dsMaxArray.add(new ScaledDataPoint(time, autosensData.slopeFromMaxDeviation, dsMaxScale));
                 dsMinArray.add(new ScaledDataPoint(time, autosensData.slopeFromMinDeviation, dsMinScale));

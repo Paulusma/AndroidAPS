@@ -88,6 +88,7 @@
         </activity>
         <activity android:name=".plugins.pump.danaRS.activities.PairingHelperActivity" />
         <activity android:name=".activities.HistoryBrowseActivity" />
+        <activity android:name=".plugins.general.historyviewer.HistoricDataActivity" />
 
         <!-- Receive new BG readings from other local apps -->
         <receiver

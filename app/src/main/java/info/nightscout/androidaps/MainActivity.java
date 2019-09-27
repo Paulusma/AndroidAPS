@@ -52,6 +52,7 @@ import info.nightscout.androidaps.events.EventRefreshGui;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.historyviewer.HistoricDataActivity;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
 import info.nightscout.androidaps.setupwizard.SetupWizardActivity;
 import info.nightscout.androidaps.tabs.TabPageAdapter;
@@ -72,12 +73,26 @@ public class MainActivity extends AppCompatActivity {
     private MenuItem pluginPreferencesMenuItem;
 
 
+    // weakreference prevents memory leak https://stackoverflow.com/questions/53781475/using-singleton-mainactivity
+    private static WeakReference<MainActivity> the;
+
+    public static MainActivity instance() {
+        return the.get();
+    }
+
+    private static Context context;
+
+    public static Context getAppContext() {
+        return MainActivity.context;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         if (L.isEnabled(L.CORE))
             log.debug("onCreate");
+        the = new WeakReference<>(this);
 
         the = new WeakReference<>(this);
         Iconify.with(new FontAwesomeModule());
@@ -380,6 +395,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.nav_historybrowser:
                 startActivity(new Intent(this, HistoryBrowseActivity.class));
+                return true;
+            case R.id.nav_historyviewer:
+                startActivity(new Intent(this, HistoricDataActivity.class));
                 return true;
             case R.id.nav_setupwizard:
                 startActivity(new Intent(this, SetupWizardActivity.class));

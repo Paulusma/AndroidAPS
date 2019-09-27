@@ -99,6 +99,7 @@ public class L {
     public static final String SMS = "SMS";
     public static final String HYPOPRED = "HYPOPRED";
     public static final String DROPTARGET = "DROPTARGET";
+    public static final String HGDPROV = "HGDPROV";
 
     private static void initialize() {
         logElements = new ArrayList<>();
@@ -126,6 +127,7 @@ public class L {
         logElements.add(new LogElement(UI, true));
         logElements.add(new LogElement(HYPOPRED, true));
         logElements.add(new LogElement(DROPTARGET, true));
+        logElements.add(new LogElement(HGDPROV, false));
     }
 
 }
