@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -219,8 +218,8 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
         if (!isEnabled(PluginType.GENERAL)) return;
 
-        if (mExecutor == null)
-            mExecutor = Executors.newScheduledThreadPool(5);
+// TODO remove or use        if (mExecutor == null)
+//            mExecutor = Executors.newScheduledThreadPool(5);
 
         Runnable historicDataUpdater = new Runnable() {
                 @Override
@@ -229,7 +228,8 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
                 }
             };
 
-        mExecutor.scheduleAtFixedRate(historicDataUpdater, 0, 60, TimeUnit.SECONDS);
+        if(mExecutor != null)
+            mExecutor.scheduleAtFixedRate(historicDataUpdater, 0, 60, TimeUnit.SECONDS);
     }
 
     @Override
@@ -237,7 +237,9 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
         super.onStop();
         MainApp.bus().unregister(this);
 
-        mExecutor.shutdown();
+
+        if(mExecutor != null)
+            mExecutor.shutdown();
         mExecutor = null;
     }
 
