@@ -228,7 +228,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
         if (!isEnabled(PluginType.GENERAL)) return;
 
-//todo remove or use        if (mExecutor == null)
+//todo remove or use        if (mExecutor == null) 
             //mExecutor = Executors.newScheduledThreadPool(3);
 
         Runnable historicDataUpdater = new Runnable() {
