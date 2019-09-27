@@ -99,4 +99,26 @@ public class HistoricGraphDataHelper implements GraphDataProvider {
 
         return result;
     }
+
+    @Override
+    public List get5MinIntervals(long fromTime, long endTime) {
+        List result = new ArrayList();
+        int ndx = 0;
+        for (long time = fromTime; time <= endTime; time += 5 * 60 * 1000L) {
+            result.add(time);
+        }
+
+        return result;
+    }
+
+    @Override
+    public List get1MinIntervals(long fromTime, long endTime) {
+        List result = new ArrayList();
+        int ndx = 0;
+        for (long time = fromTime; time <= endTime; time += 1 * 60 * 1000L) {
+            result.add(time);
+        }
+
+        return result;
+    }
 }

@@ -7,7 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -40,7 +41,9 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
     private Logger log = LoggerFactory.getLogger(L.HGDPROV);
 
     // Cache for data in a single view. Initialised by call to getBGReadings(fromTime, toTime) so this should always be called first.
-    private List<HistoricGraphData> data = null;
+    private SortedMap<Long,HistoricGraphData> dataMap = dataMap = new TreeMap<>();
+    private List keys5Min = new ArrayList();
+    private List keys1Min = new ArrayList();
     private int lastTimeIndex = 0;
 
     private static HistoricGraphDataProviderPlugin plugin = new HistoricGraphDataProviderPlugin();
@@ -60,23 +63,43 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
 
     private void loadData(long fromTime, long toTime) {
-        data = MainApp.getDbHelper().getHistoricGraphData(fromTime, toTime);
-        lastTimeIndex = 0;
+        List<HistoricGraphData> data = MainApp.getDbHelper().getHistoricGraphData(fromTime, toTime);
 
-        if (data.isEmpty()) {
-            data.add(new HistoricGraphData());
+        dataMap.clear();
+        keys5Min.clear();
+        keys1Min.clear();
+
+        long last5MinRecord = 0;
+        for (HistoricGraphData record:data) {
+            dataMap.put(record.date,record);
+            keys1Min.add(record.date);
+            if(record.date - last5MinRecord > 5*60*1000-30){
+                keys5Min.add(record.date);
+                last5MinRecord = record.date;
+            }
         }
+    }
+
+    @Override
+    public List get5MinIntervals(long fromTime, long toTime) {
+        return keys5Min;
+    }
+
+    @Override
+    public List get1MinIntervals(long fromTime, long toTime) {
+        return keys1Min;
     }
 
     public List<BgReading> getBGReadings(long fromTime, long toTime) {
         loadData(fromTime, toTime);
 
         List<BgReading> result = new ArrayList<BgReading>();
-        for (int i = data.size() - 1; i >= 0; i--) {
-            if (data.get(i).bg > 0) {
+        for (int i = 0;i<keys1Min.size();i++) {
+            HistoricGraphData record = dataMap.get(keys1Min.get(i));
+            if (record.bg > 0) {
                 BgReading bg = new BgReading();
-                bg.date = data.get(i).date;
-                bg.value = data.get(i).bg;
+                bg.date = record.date;
+                bg.value = record.bg;
 
                 result.add(bg);
             }
@@ -86,35 +109,21 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
         return result;
     }
 
-    private int getTimeIndex(long time) {
-        if (data.get(lastTimeIndex).date > time)
-            lastTimeIndex = 0;
-
-        while (lastTimeIndex < data.size() && data.get(lastTimeIndex).date <= time) {
-            if (data.get(lastTimeIndex).date == time) return lastTimeIndex;
-            lastTimeIndex++;
-        }
-
-        lastTimeIndex--;
-        if (lastTimeIndex < 0) lastTimeIndex = 0;
-        return lastTimeIndex;
-    }
-
     public IobTotal getActivity(long time, Profile profile) {
         IobTotal result = new IobTotal(time);
 
-        result.activity = data.get(getTimeIndex(time)).activity;
+        result.activity = dataMap.get(time).activity;
 
         return result;
     }
 
     public double getIob(long time, Profile profile) {
-        return data.get(getTimeIndex(time)).iob;
+        return dataMap.get(time).iob;
     }
 
     public AutosensData getCob(long time) {
         AutosensData result = new AutosensData();
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
         result.cob = hit.cob;
         result.carbsFromBolus = hit.carbsFromBolus;
 
@@ -123,7 +132,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
     public AutosensData getDeviations(long time) {
         AutosensData result = new AutosensData();
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
         result.deviation = hit.deviation;
         result.pastSensitivity = hit.pastSensitivity;
         result.type = hit.type;
@@ -135,7 +144,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
         AutosensData result = new AutosensData();
         result.autosensResult = new AutosensResult();
 
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
         result.autosensResult.ratio = hit.sens;
 
         return result;
@@ -143,7 +152,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
     public AutosensData getSlope(long time) {
         AutosensData result = new AutosensData();
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
 
         result.slopeFromMaxDeviation = hit.slopeMax;
         result.slopeFromMinDeviation = hit.slopeMin;
@@ -153,7 +162,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
     public BasalData getBasal(long time, Profile profile) {
         BasalData result = new BasalData();
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
 
         result.basal = hit.basal;
         result.isTempBasalRunning = hit.isTempBasalRunning;
@@ -164,7 +173,7 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
     public TempTarget getTempTarget(long time) {
         TempTarget result = new TempTarget();
-        HistoricGraphData hit = data.get(getTimeIndex(time));
+        HistoricGraphData hit = dataMap.get(time);
 
         result.low = hit.target;
 
@@ -219,8 +228,8 @@ public class HistoricGraphDataProviderPlugin extends PluginBase implements Graph
 
         if (!isEnabled(PluginType.GENERAL)) return;
 
-        if (mExecutor == null)
-            mExecutor = Executors.newScheduledThreadPool(3);
+//todo remove or use        if (mExecutor == null)
+            //mExecutor = Executors.newScheduledThreadPool(3);
 
         Runnable historicDataUpdater = new Runnable() {
                 @Override

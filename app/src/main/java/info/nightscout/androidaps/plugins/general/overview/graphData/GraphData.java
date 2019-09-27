@@ -44,7 +44,6 @@ import info.nightscout.androidaps.plugins.general.overview.graphExtensions.Scale
 import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeAsXAxisLabelFormatter;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.BasalData;
-import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.utils.Round;
 import info.nightscout.androidaps.utils.SP;
@@ -63,12 +62,9 @@ public class GraphData {
     private String units;
     private List<Series> series = new ArrayList<>();
 
-    private IobCobCalculatorPlugin iobCobCalculatorPlugin;
-
-    public GraphData(GraphView graph, IobCobCalculatorPlugin iobCobCalculatorPlugin) {
+    public GraphData(GraphView graph) {
         units = ProfileFunctions.getInstance().getProfileUnits();
         this.graph = graph;
-        this.iobCobCalculatorPlugin = iobCobCalculatorPlugin;
     }
 
     public void addBgReadings(long fromTime, long toTime, double lowLine, double highLine, List<BgReading> predictions, GraphDataProvider gdp) {
@@ -194,7 +190,10 @@ public class GraphData {
         double lastAbsoluteLineBasal = -1;
         double lastBaseBasal = 0;
         double lastTempBasal = 0;
-        for (long time = fromTime; time < toTime; time += 60 * 1000L) {
+
+        List times = gdp.get1MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             if (profile == null) continue;
             BasalData basalData = gdp.getBasal(time,profile);
@@ -303,7 +302,9 @@ public class GraphData {
             }
         }
 
-        for (long time = fromTime; time < toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get1MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             TempTarget tt = gdp.getTempTarget(time);
             double value;
             if (tt == null) {
@@ -402,7 +403,9 @@ public class GraphData {
         Scale actScale = new Scale();
         IobTotal total = null;
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             double act = 0d;
             if (profile == null) continue;
@@ -454,7 +457,9 @@ public class GraphData {
         double lastIob = 0;
         Scale iobScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             double iob = 0d;
             if (profile != null)
@@ -495,7 +500,9 @@ public class GraphData {
         int lastCob = 0;
         Scale cobScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             AutosensData autosensData = gdp.getCob(time);
             if (autosensData != null) {
                 int cob = (int) autosensData.cob;
@@ -553,7 +560,9 @@ public class GraphData {
         Double maxDevValueFound = 0d;
         Scale devScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             AutosensData autosensData = gdp.getDeviations(time);
             if (autosensData != null) {
                 int color = MainApp.gc(R.color.deviationblack); // "="
@@ -603,7 +612,9 @@ public class GraphData {
         Double minRatioValueFound = Double.MAX_VALUE;
         Scale ratioScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             AutosensData autosensData = gdp.getRatio(time);
             if (autosensData != null) {
                 ratioArray.add(new ScaledDataPoint(time, autosensData.autosensResult.ratio - 1, ratioScale));
@@ -640,7 +651,9 @@ public class GraphData {
         Scale dsMaxScale = new Scale();
         Scale dsMinScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        List times = gdp.get5MinIntervals(fromTime,toTime);
+        for (int ndx = 0;ndx<times.size();ndx++) {
+            long time = (long)times.get(ndx);
             AutosensData autosensData = gdp.getSlope(time);
             if (autosensData != null) {
                 dsMaxArray.add(new ScaledDataPoint(time, autosensData.slopeFromMaxDeviation, dsMaxScale));

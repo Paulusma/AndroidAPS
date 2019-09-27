@@ -27,8 +27,6 @@ import java.util.Date;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
-import info.nightscout.androidaps.interfaces.PumpInterface;
-import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
@@ -178,7 +176,6 @@ public class HistoricDataActivity extends AppCompatActivity {
             if (noProfile == null || buttonDate == null || buttonZoom == null || bgGraph == null || iobGraph == null || seekBar == null)
                 return;
 
-            final PumpInterface pump = ConfigBuilderPlugin.getPlugin().getActivePump();
             final Profile profile = ProfileFunctions.getInstance().getProfile();
 
             if (profile == null) {
@@ -207,7 +204,7 @@ public class HistoricDataActivity extends AppCompatActivity {
 
             //  ------------------ 1st graph
 
-            final GraphData graphData = new GraphData(bgGraph, iobCobCalculatorPlugin);
+            final GraphData graphData = new GraphData(bgGraph);
 
             // **** In range Area ****
             graphData.addInRangeArea(fromTime, toTime, lowLine, highLine);
@@ -226,7 +223,7 @@ public class HistoricDataActivity extends AppCompatActivity {
             graphData.addTreatments(fromTime, toTime, dataProvider);
 
             // add basal data
-            if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showhbasals", true)) {
+            if (SP.getBoolean("showhbasals", true)) {
                 graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d, dataProvider);
             }
 
@@ -239,7 +236,7 @@ public class HistoricDataActivity extends AppCompatActivity {
             // ------------------ 2nd graph
 
             new Thread(() -> {
-                final GraphData secondGraphData = new GraphData(iobGraph, iobCobCalculatorPlugin);
+                final GraphData secondGraphData = new GraphData(iobGraph);
 
                 boolean useIobForScale = false;
                 boolean useCobForScale = false;

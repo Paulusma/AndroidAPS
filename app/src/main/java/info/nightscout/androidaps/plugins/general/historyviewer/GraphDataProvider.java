@@ -39,4 +39,8 @@ public interface GraphDataProvider {
     public List<ExtendedBolus> getExtendedBoluses(long fromTime, long endTime);
 
     public List<CareportalEvent> getcareportalEvents(long fromTime, long endTime);
+
+    public List get5MinIntervals(long fromTime, long endTime);
+
+    public List get1MinIntervals(long fromTime, long endTime);
 }

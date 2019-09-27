@@ -269,7 +269,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 
         //  ------------------ 1st graph
 
-        final GraphData graphData = new GraphData(bgGraph, iobCobCalculatorPlugin);
+        final GraphData graphData = new GraphData(bgGraph);
 
         // **** In range Area ****
         graphData.addInRangeArea(fromTime, toTime, lowLine, highLine);
@@ -307,7 +307,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
         // ------------------ 2nd graph
 
         new Thread(() -> {
-            final GraphData secondGraphData = new GraphData(iobGraph, iobCobCalculatorPlugin);
+            final GraphData secondGraphData = new GraphData(iobGraph);
 
             boolean useIobForScale = false;
             boolean useCobForScale = false;
