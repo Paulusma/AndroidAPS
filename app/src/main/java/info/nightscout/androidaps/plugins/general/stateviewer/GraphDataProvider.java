@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.historyviewer;
+package info.nightscout.androidaps.plugins.general.stateviewer;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.historyviewer;
+package info.nightscout.androidaps.plugins.general.stateviewer;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 import info.nightscout.androidaps.db.DatabaseHelper;
 import info.nightscout.androidaps.logging.L;
 
-@DatabaseTable(tableName = DatabaseHelper.DATABASE_GRAPHDATA)
-public class HistoricGraphData {
+@DatabaseTable(tableName = DatabaseHelper.DATABASE_STATE)
+public class StateData {
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
     @DatabaseField(id = true)
@@ -64,7 +64,7 @@ public class HistoricGraphData {
     @DatabaseField
     public double target;
 
-    public HistoricGraphData() {
+    public StateData() {
         this.date = 0L;
         this.bg = 0.0;
         this.activity = 0.0;

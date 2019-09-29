@@ -33,7 +33,7 @@ import info.nightscout.androidaps.plugins.aps.loop.APSResult;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.general.historyviewer.GraphDataProvider;
+import info.nightscout.androidaps.plugins.general.stateviewer.GraphDataProvider;
 import info.nightscout.androidaps.plugins.general.overview.graphExtensions.AreaGraphSeries;
 import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DataPointWithLabelInterface;
 import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DoubleDataPoint;

@@ -42,7 +42,7 @@ import info.nightscout.androidaps.plugins.general.bgmonitors.dropbgtarget.DropBG
 import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalPlugin;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
-import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphDataProviderPlugin;
+import info.nightscout.androidaps.plugins.general.stateviewer.StateDataPlugin;
 import info.nightscout.androidaps.plugins.general.maintenance.LoggerUtils;
 import info.nightscout.androidaps.plugins.general.maintenance.MaintenancePlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSClientPlugin;
@@ -192,7 +192,7 @@ public class MainApp extends Application {
             if (Config.SAFETY) pluginsList.add(VersionCheckerPlugin.INSTANCE);
             if (Config.SAFETY) pluginsList.add(StorageConstraintPlugin.getPlugin());
     //        if (Config.APS) pluginsList.add(ObjectivesPlugin.getPlugin());
-            pluginsList.add(HistoricGraphDataProviderPlugin.getPlugin());
+            pluginsList.add(StateDataPlugin.getPlugin());
             pluginsList.add(SourceXdripPlugin.getPlugin());
             pluginsList.add(SourceNSClientPlugin.getPlugin());
             pluginsList.add(SourceMM640gPlugin.getPlugin());

@@ -36,7 +36,7 @@ import info.nightscout.androidaps.events.EventCustomCalculationFinished;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphDataHelper;
+import info.nightscout.androidaps.plugins.general.stateviewer.GraphDataHelper;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
@@ -53,7 +53,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 
     ImageButton chartButton;
 
-    HistoricGraphDataHelper dataProvider = new HistoricGraphDataHelper();
+    GraphDataHelper dataProvider = new GraphDataHelper();
 
 
     @BindView(R.id.historybrowse_date)

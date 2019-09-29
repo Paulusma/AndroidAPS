@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.historyviewer;
+package info.nightscout.androidaps.plugins.general.stateviewer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorP
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 
-public class HistoricGraphDataHelper implements GraphDataProvider {
+public class GraphDataHelper implements GraphDataProvider {
     
     IobCobCalculatorPlugin iobCobCalculatorPlugin = IobCobCalculatorPlugin.getPlugin();
 

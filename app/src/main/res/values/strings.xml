@@ -1420,7 +1420,7 @@
     <string name="hypopred_corr_note">Hypo correction</string>
 
     <string name="hgd_provider">HistoryCollector</string>
-    <string name="nav_historyviewer">History viewer</string>
+    <string name="nav_historyviewer">State history</string>
 
     <string-array name="logcat_spinner">
         <item>Verbose</item>

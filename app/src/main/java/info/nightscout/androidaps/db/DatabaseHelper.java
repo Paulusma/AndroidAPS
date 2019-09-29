@@ -45,7 +45,7 @@ import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
-import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphData;
+import info.nightscout.androidaps.plugins.general.stateviewer.StateData;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventNewHistoryData;
@@ -83,7 +83,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public static final String DATABASE_INSIGHT_HISTORY_OFFSETS = "InsightHistoryOffsets";
     public static final String DATABASE_INSIGHT_BOLUS_IDS = "InsightBolusIDs";
     public static final String DATABASE_INSIGHT_PUMP_IDS = "InsightPumpIDs";
-    public static final String DATABASE_GRAPHDATA = "HistoricGraphData";
+    public static final String DATABASE_STATE = "HistoricGraphData"; //TODO: statedata
 
     private static final int DATABASE_VERSION = 11;
 
@@ -122,7 +122,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             if (L.isEnabled(L.DATABASE))
                 log.info("onCreate");
 //todo TableUtils.dropTable(connectionSource, HistoricGraphData.class, true);
-            TableUtils.createTableIfNotExists(connectionSource, HistoricGraphData.class);
+            TableUtils.createTableIfNotExists(connectionSource, StateData.class);
             TableUtils.createTableIfNotExists(connectionSource, TempTarget.class);
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
@@ -315,8 +315,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     // ------------------ getDao -------------------------------------------
 
-    private Dao<HistoricGraphData, Long> getDaoHistoricGraphData() throws SQLException {
-        return getDao(HistoricGraphData.class);
+    private Dao<StateData, Long> getDaoHistoricGraphData() throws SQLException {
+        return getDao(StateData.class);
     }
 
     private Dao<TempTarget, Long> getDaoTempTargets() throws SQLException {
@@ -1817,26 +1817,26 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     // ---------------- HistoricGraphData handling ---------------
 
-    public List<HistoricGraphData> getHistoricGraphData(long from, long to) {
+    public List<StateData> getStateData(long from, long to) {
         try {
-            Dao<HistoricGraphData, Long> daoHistoricGraphData = getDaoHistoricGraphData();
-            List<HistoricGraphData> historicGraphData;
-            QueryBuilder<HistoricGraphData, Long> queryBuilder = daoHistoricGraphData.queryBuilder();
+            Dao<StateData, Long> daoHistoricGraphData = getDaoHistoricGraphData();
+            List<StateData> historicGraphData;
+            QueryBuilder<StateData, Long> queryBuilder = daoHistoricGraphData.queryBuilder();
             queryBuilder.orderBy("date",true);
             Where where = queryBuilder.where();
             where.between("date", from, to);
-            PreparedQuery<HistoricGraphData> preparedQuery = queryBuilder.prepare();
+            PreparedQuery<StateData> preparedQuery = queryBuilder.prepare();
             historicGraphData = daoHistoricGraphData.query(preparedQuery);
             return historicGraphData;
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }
-        return new ArrayList<HistoricGraphData>();
+        return new ArrayList<StateData>();
     }
 
-    public void createOrUpdateHistoricGraphData(HistoricGraphData historicGraphData) {
+    public void createOrUpdateHistoricGraphData(StateData historicGraphData) {
         try {
-            Dao<HistoricGraphData, Long> dao = getDaoHistoricGraphData();
+            Dao<StateData, Long> dao = getDaoHistoricGraphData();
             dao.createOrUpdate(historicGraphData);
         } catch (SQLException e) {
             ToastUtils.showToastInUiThread(MainApp.instance(), "createOrUpdate-Exception");

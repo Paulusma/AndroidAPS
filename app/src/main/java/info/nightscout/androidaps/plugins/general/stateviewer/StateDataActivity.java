@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.historyviewer;
+package info.nightscout.androidaps.plugins.general.stateviewer;
 
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -31,13 +31,14 @@ import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
+import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeAsXAxisLabelFormatter;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.T;
 
-public class HistoricDataActivity extends AppCompatActivity {
-    private static Logger log = LoggerFactory.getLogger(HistoricDataActivity.class);
+public class StateDataActivity extends AppCompatActivity {
+    private static Logger log = LoggerFactory.getLogger(StateDataActivity.class);
 
     IobCobCalculatorPlugin iobCobCalculatorPlugin;
 
@@ -45,7 +46,7 @@ public class HistoricDataActivity extends AppCompatActivity {
 
     boolean showBasal = true;
 
-    HistoricGraphDataProviderPlugin dataProvider = HistoricGraphDataProviderPlugin.getPlugin();
+    StateDataPlugin dataProvider = StateDataPlugin.getPlugin();
 
     Button buttonDate;
     Button buttonZoom;
@@ -58,7 +59,7 @@ public class HistoricDataActivity extends AppCompatActivity {
     private int rangeToDisplay = 24; // for graph
     private long start = 0;
 
-    public HistoricDataActivity() {
+    public StateDataActivity() {
         iobCobCalculatorPlugin = new IobCobCalculatorPlugin();
     }
 
@@ -145,6 +146,9 @@ public class HistoricDataActivity extends AppCompatActivity {
         iobGraph.getGridLabelRenderer().setLabelVerticalWidth(50);
         iobGraph.getGridLabelRenderer().setNumVerticalLabels(5);
 
+        bgGraph.getViewport().setScrollable(true); // enables horizontal scrolling
+        bgGraph.getViewport().setScalable(true); // enables horizontal zooming and scrolling
+
         setupChartMenu();
     }
 
@@ -213,7 +217,12 @@ public class HistoricDataActivity extends AppCompatActivity {
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null, dataProvider);
 
             // set manual x bounds to have nice steps
-            graphData.formatAxis(fromTime, toTime);
+//            graphData.formatAxis(fromTime, toTime);
+            bgGraph.getViewport().setMaxX(fromTime+6*60*60*1000);
+            bgGraph.getViewport().setMinX(fromTime);
+            bgGraph.getViewport().setXAxisBoundsManual(true);
+            bgGraph.getGridLabelRenderer().setLabelFormatter(new TimeAsXAxisLabelFormatter("HH"));
+            bgGraph.getGridLabelRenderer().setNumHorizontalLabels(7); // only 7 because of the space
 
             if(SP.getBoolean("showactivityprimary", true)) {
                 graphData.addActivity(fromTime, toTime, false, 1d, dataProvider);

@@ -87,8 +87,8 @@ import info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.HypoP
 import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment;
 import info.nightscout.androidaps.plugins.general.careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.general.careportal.OptionsToShow;
-import info.nightscout.androidaps.plugins.general.historyviewer.GraphDataProvider;
-import info.nightscout.androidaps.plugins.general.historyviewer.HistoricGraphDataHelper;
+import info.nightscout.androidaps.plugins.general.stateviewer.GraphDataProvider;
+import info.nightscout.androidaps.plugins.general.stateviewer.GraphDataHelper;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
@@ -1461,7 +1461,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             final long now = System.currentTimeMillis();
 
-            GraphDataProvider dataProvider = new HistoricGraphDataHelper();
+            GraphDataProvider dataProvider = new GraphDataHelper();
 
              //  ------------------ 1st graph
             if (L.isEnabled(L.OVERVIEW))
