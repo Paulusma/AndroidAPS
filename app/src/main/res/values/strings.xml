@@ -1387,7 +1387,7 @@
     <string name="hypoppred_alert_horizon_summary">Alert on hypo within (mins)</string>
     <string name="key_hypoppred_alert_horizon">hypoppred_alert_horizon</string>
     <string name="hypoppred_alert_horizon">Alert on hypo within (mins)</string>
-    <string name="hypoppred_alert_msg_carbs">, advice %1$d gram carbs</string>
+    <string name="hypoppred_alert_msg_carbs">, advice %1$d dextro</string>
     <string name="hypoppred_alert_msg_now">Hypo in progress</string>
     <string name="droptarget">Drop target when BG stable</string>
     <string name="droptarget_shortname">DTBG</string>
@@ -1417,10 +1417,11 @@
     <string name="hypoppred_aaps_summary"><![CDATA[The AAPS predictions (IOB, COB,...) are used to predict lows & hypo\'s]]></string>
     <string name="key_hypoppred_units">hypopred_units</string>
     <string name="key_droptarget_units">droptarget_units</string>
-    <string name="hypopred_corr_note">Hypo correction</string>
+    <string name="hypopred_corr_note">%1$d dextro</string>
 
     <string name="hgd_provider">HistoryCollector</string>
     <string name="nav_historyviewer">State history</string>
+    <string name="nav_stateviewer">Historic state</string>
 
     <string-array name="logcat_spinner">
         <item>Verbose</item>

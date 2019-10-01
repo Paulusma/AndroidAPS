@@ -15,9 +15,9 @@
         app:showAsAction="never"
         android:title="@string/nav_historybrowser" />
     <item
-        android:id="@+id/nav_historyviewer"
+        android:id="@+id/nav_stateviewer"
         app:showAsAction="never"
-        android:title="@string/nav_historyviewer" />
+        android:title="@string/nav_stateviewer" />
     <item
         android:id="@+id/nav_setupwizard"
         app:showAsAction="never"

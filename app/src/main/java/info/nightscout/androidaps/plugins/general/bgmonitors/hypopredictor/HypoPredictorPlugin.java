@@ -542,8 +542,8 @@ public class HypoPredictorPlugin extends PluginBase {
         int detectionHorizon = SP.getInt(R.string.key_hypoppred_horizon, 20);
         long predTimeMins = (long) mBgFit.belowThresholdAt(detectionThreshold, detectionHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, 120);
-            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 120);
+            double lowestBG = mBgFit.minimum(predTimeMins, 60);
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 60);
             log.info("Found LOW (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", false, predTimeMins, lowestBG, timeLowestBG));
         }
@@ -554,8 +554,8 @@ public class HypoPredictorPlugin extends PluginBase {
         int alertHorizon = SP.getInt(R.string.key_hypoppred_alert_horizon, 20);
         predTimeMins = (long) mBgFit.belowThresholdAt(alertThreshold, alertHorizon);
         if (predTimeMins != -1) {
-            double lowestBG = mBgFit.minimum(predTimeMins, 120);
-            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 120);
+            double lowestBG = mBgFit.minimum(predTimeMins, 60);
+            long timeLowestBG = (long) mBgFit.belowThresholdAt(lowestBG + 4.5, 60);
             log.info("Found hypo (FIT@" + predTimeMins + "(" + lowestBG + "@" + timeLowestBG + ")");
             detectedLowsAndHypos.add(new BGLow("FIT", true, predTimeMins, lowestBG, timeLowestBG));
         }
@@ -637,9 +637,9 @@ public class HypoPredictorPlugin extends PluginBase {
                 }
             }
             String sMins, sCarbs = "";
-            gramCarbs = (int)gramCarbs;
-            if (gramCarbs > 0) {
-                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, (int)gramCarbs);
+            int dextros = (int)(1 + gramCarbs/2.5);
+            if (((int)gramCarbs) > 0) {
+                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, dextros);
                 if (inMins > 0)
                     sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
                 else
@@ -648,7 +648,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 n.soundId = R.raw.urgentalarm;
                 double ncGrams = (int) gramCarbs;
                 n.action(MainApp.gs(R.string.request), () ->
-                        new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
+                        new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
                 MainApp.bus().post(new EventNewNotification(n));
 
                 if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {

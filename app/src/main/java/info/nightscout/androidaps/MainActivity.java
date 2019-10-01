@@ -52,8 +52,8 @@ import info.nightscout.androidaps.events.EventRefreshGui;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.general.stateviewer.StateDataActivity;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
+import info.nightscout.androidaps.plugins.general.stateviewer.StateDataActivity;
 import info.nightscout.androidaps.setupwizard.SetupWizardActivity;
 import info.nightscout.androidaps.tabs.TabPageAdapter;
 import info.nightscout.androidaps.utils.AndroidPermission;
@@ -396,7 +396,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.nav_historybrowser:
                 startActivity(new Intent(this, HistoryBrowseActivity.class));
                 return true;
-            case R.id.nav_historyviewer:
+            case R.id.nav_stateviewer:
                 startActivity(new Intent(this, StateDataActivity.class));
                 return true;
             case R.id.nav_setupwizard:
