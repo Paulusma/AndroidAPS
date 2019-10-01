@@ -637,9 +637,9 @@ public class HypoPredictorPlugin extends PluginBase {
                 }
             }
             String sMins, sCarbs = "";
-            int dextros = (int)(1 + gramCarbs/2.5);
-            if (((int)gramCarbs) > 0) {
-                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, dextros);
+            gramCarbs = (int)(2.5 + gramCarbs/2.5);
+            if (gramCarbs > 0) {
+                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, (int)gramCarbs);
                 if (inMins > 0)
                     sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
                 else
@@ -648,7 +648,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 n.soundId = R.raw.urgentalarm;
                 double ncGrams = (int) gramCarbs;
                 n.action(MainApp.gs(R.string.request), () ->
-                        new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
+                        new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
                 MainApp.bus().post(new EventNewNotification(n));
 
                 if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
