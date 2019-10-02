@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.stmt.DeleteBuilder;
+import com.j256.ormlite.stmt.PreparedDelete;
 import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
@@ -134,6 +136,19 @@ public class StateDBHelper extends OrmLiteSqliteOpenHelper {
             dao.createOrUpdate(historicGraphData);
         } catch (SQLException e) {
             ToastUtils.showToastInUiThread(MainApp.instance(), "createOrUpdate-Exception");
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    public void deleteStateDataOlderThan(long l) {
+        try {
+            Dao<StateData, Long> dao = getDaoStateData();
+            DeleteBuilder<StateData, Long> delBuilder = dao.deleteBuilder();
+            Where where = delBuilder.where();
+            where.lt("date", l);
+            PreparedDelete<StateData> preparedDelete = delBuilder.prepare();
+            dao.delete(preparedDelete);
+        } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }
     }

@@ -7,6 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -25,17 +30,25 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.events.EventLoopUpdateGui;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensData;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensResult;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.BasalData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.utils.T;
 
 import static info.nightscout.androidaps.utils.DateUtil.now;
 
-public class StateDataPlugin extends PluginBase {
+public class StateDataPlugin extends PluginBase implements GraphDataProvider {
     private Logger log = LoggerFactory.getLogger(L.HGDPROV);
 
     private static StateDBHelper dbHelper = null;
+
+    // Cache for data in a single view. Initialised by call to getBGReadings(fromTime, toTime) so this should always be called first.
+    private SortedMap<Long, StateData> dataMap = dataMap = new TreeMap<>();
+    private List keys5Min = new ArrayList();
+    private List keys1Min = new ArrayList();
+    private int lastTimeIndex = 0;
 
     private static StateDataPlugin plugin = new StateDataPlugin();
 
@@ -52,11 +65,127 @@ public class StateDataPlugin extends PluginBase {
                 .pluginName(R.string.hgd_provider));
     }
 
-    // ------------- Get data ----------------------------
+    private void loadData(long fromTime, long toTime) {
+        List<StateData> data = MainApp.getDbHelper().getStateData(fromTime, toTime);
 
-    public List<StateData> loadData(long fromTime, long toTime) {
-        return MainApp.getDbHelper().getStateData(fromTime, toTime);
+        dataMap.clear();
+        keys5Min.clear();
+        keys1Min.clear();
+
+        long last5MinRecord = 0;
+        for (StateData record:data) {
+            dataMap.put(record.date,record);
+            keys1Min.add(record.date);
+            if(record.date - last5MinRecord > 5*60*1000-30){
+                keys5Min.add(record.date);
+                last5MinRecord = record.date;
+            }
+        }
     }
+
+    @Override
+    public List get5MinIntervals(long fromTime, long toTime) {
+        return keys5Min;
+    }
+
+    @Override
+    public List get1MinIntervals(long fromTime, long toTime) {
+        return keys1Min;
+    }
+
+    public List<BgReading> getBGReadings(long fromTime, long toTime) {
+        loadData(fromTime, toTime);
+
+        List<BgReading> result = new ArrayList<BgReading>();
+        for (int i = 0;i<keys1Min.size();i++) {
+            StateData record = dataMap.get(keys1Min.get(i));
+            if (record.bg > 0) {
+                BgReading bg = new BgReading();
+                bg.date = record.date;
+                bg.value = record.bg;
+
+                result.add(bg);
+            }
+        }
+
+
+        return result;
+    }
+
+    public IobTotal getActivity(long time, Profile profile) {
+        IobTotal result = new IobTotal(time);
+
+        result.activity = dataMap.get(time).activity;
+
+        return result;
+    }
+
+    public double getIob(long time, Profile profile) {
+        return dataMap.get(time).iob;
+    }
+
+    public AutosensData getCob(long time) {
+        AutosensData result = new AutosensData();
+        StateData hit = dataMap.get(time);
+        result.cob = hit.cob;
+        result.carbsFromBolus = hit.carbsFromBolus;
+
+        return result;
+    }
+
+    public AutosensData getDeviations(long time) {
+        AutosensData result = new AutosensData();
+        StateData hit = dataMap.get(time);
+        result.deviation = hit.deviation;
+        result.pastSensitivity = hit.pastSensitivity;
+        result.type = hit.type;
+
+        return result;
+    }
+
+    public AutosensData getRatio(long time) {
+        AutosensData result = new AutosensData();
+        result.autosensResult = new AutosensResult();
+
+        StateData hit = dataMap.get(time);
+        result.autosensResult.ratio = hit.sens;
+
+        return result;
+    }
+
+    public AutosensData getSlope(long time) {
+        AutosensData result = new AutosensData();
+        StateData hit = dataMap.get(time);
+
+        result.slopeFromMaxDeviation = hit.slopeMax;
+        result.slopeFromMinDeviation = hit.slopeMin;
+
+        return result;
+    }
+
+    public BasalData getBasal(long time, Profile profile) {
+        BasalData result = new BasalData();
+        StateData hit = dataMap.get(time);
+
+        result.basal = hit.basal;
+        result.isTempBasalRunning = hit.isTempBasalRunning;
+        result.tempBasalAbsolute = hit.tempBasalAbsolute;
+
+        return result;
+    }
+
+    public TempTarget getTempTarget(long time) {
+        TempTarget result = new TempTarget();
+        StateData hit = dataMap.get(time);
+
+        result.low = hit.target;
+
+        result.high = result.low;
+
+        return result;
+    }
+
+    // ------------- Data from other sources ----------------------------
 
     public List<Treatment> getTreatments(long fromTime, long endTime) {
         List<Treatment> result = new ArrayList<Treatment>();
@@ -93,7 +222,7 @@ public class StateDataPlugin extends PluginBase {
     /*
     COLLECTION OF GRAPH DATA
      */
-//    private ScheduledExecutorService mExecutor= null;
+    private ScheduledExecutorService mExecutor= null;
 
     @Override
     protected void onStart() {
@@ -103,20 +232,23 @@ public class StateDataPlugin extends PluginBase {
         if (!isEnabled(PluginType.GENERAL)) return;
 
         dbHelper = new StateDBHelper(MainApp.instance());
-/*
-        if (mExecutor == null)
-            mExecutor = Executors.newScheduledThreadPool(3);
 
-        Runnable historicDataUpdater = new Runnable() {
+        if (mExecutor == null)
+            mExecutor = Executors.newSingleThreadScheduledExecutor();
+
+        Runnable cmdHistoricDataCleanup = new Runnable() {
                 @Override
                 public void run() {
-                    updateHistoricGraphData(null);
+                    historicDataCleanup();
                 }
             };
 
         if(mExecutor != null)
-            mExecutor.scheduleAtFixedRate(historicDataUpdater, 0, 60, TimeUnit.SECONDS);
-  */
+            mExecutor.scheduleAtFixedRate(cmdHistoricDataCleanup, 0, 1, TimeUnit.DAYS);
+    }
+
+    private void historicDataCleanup() {
+        dbHelper.deleteStateDataOlderThan(now()- T.days(90).msecs());
     }
 
     @Override
@@ -128,11 +260,10 @@ public class StateDataPlugin extends PluginBase {
             dbHelper.close();
             dbHelper = null;
         }
-/*
+
         if(mExecutor != null)
             mExecutor.shutdown();
         mExecutor = null;
-*/
     }
 
 
@@ -211,5 +342,4 @@ public class StateDataPlugin extends PluginBase {
             log.error("Unhandled exception", e);
         }
     }
-
 }

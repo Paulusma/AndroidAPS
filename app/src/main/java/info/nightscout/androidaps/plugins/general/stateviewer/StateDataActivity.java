@@ -1,9 +1,14 @@
 package info.nightscout.androidaps.plugins.general.stateviewer;
 
-import android.graphics.DashPathEffect;
-import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.PopupMenu;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -11,100 +16,140 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Calendar;
+import java.util.Date;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
-import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
-import info.nightscout.androidaps.db.CareportalEvent;
-import info.nightscout.androidaps.db.ExtendedBolus;
-import info.nightscout.androidaps.db.ProfileSwitch;
-import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.AreaGraphSeries;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DataPointWithLabelInterface;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DoubleDataPoint;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.PointsWithLabelGraphSeries;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.Scale;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.ScaledDataPoint;
+import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
 import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeAsXAxisLabelFormatter;
-import info.nightscout.androidaps.plugins.treatments.Treatment;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
-import info.nightscout.androidaps.utils.MidnightTime;
+import info.nightscout.androidaps.utils.SP;
+import info.nightscout.androidaps.utils.T;
 
 public class StateDataActivity extends AppCompatActivity {
-    private static Logger log = LoggerFactory.getLogger(L.HGDPROV);
+    private static Logger log = LoggerFactory.getLogger(StateDataActivity.class);
+
+    IobCobCalculatorPlugin iobCobCalculatorPlugin;
 
     ImageButton chartButton;
 
-    @BindView(R.id.statebrowse_graph)
-    GraphView stateGraph;
-    @BindView(R.id.statebrowse_noprofile)
-    TextView noProfile;
-    @BindView(R.id.statebrowse_export)
-    Button buttonExport;
-    SeekBar seekBar;
-    TextView seekProgress;
+    boolean showBasal = true;
 
-    private long timePeriod = 7*24*60*60*1000;
-    private int timeWindow = 24*60*60*1000;
-    private long fromTime = 0;
-    ScaledDataPoint[] bgData = null;
+    StateDataPlugin dataProvider = StateDataPlugin.getPlugin();
+
+    Button buttonDate;
+    Button buttonZoom;
+    GraphView bgGraph;
+    GraphView iobGraph;
+    SeekBar seekBar;
+    TextView noProfile;
+    TextView iobCalculationProgressView;
+
+    private int rangeToDisplay = 24; // for graph
+    private long start = 0;
+
+    public StateDataActivity() {
+        iobCobCalculatorPlugin = new IobCobCalculatorPlugin();
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        try {
-            setContentView(R.layout.activity_statebrowser);
+        setContentView(R.layout.activity_historybrowse);
 
-            ButterKnife.bind(this);
-            stateGraph.getViewport().setScalable(true);
-            stateGraph.getViewport().setScrollable(true);
-            stateGraph.getViewport().setMaxX(System.currentTimeMillis());
-            stateGraph.getViewport().setMinX(System.currentTimeMillis() - 3 * 60 * 60 * 1000);
-            stateGraph.getViewport().setXAxisBoundsManual(true);
+        buttonDate = findViewById(R.id.historybrowse_date);
+        buttonZoom = findViewById(R.id.historybrowse_zoom);
+        bgGraph = findViewById(R.id.historyybrowse_bggraph);
+        iobGraph = findViewById(R.id.historybrowse_iobgraph);
+        seekBar = findViewById(R.id.historybrowse_seekBar);
+        noProfile = findViewById(R.id.historybrowse_noprofile);
+        iobCalculationProgressView = findViewById(R.id.overview_iobcalculationprogess);
 
+        findViewById(R.id.historybrowse_left).setOnClickListener(v -> {
+            start -= T.hours(rangeToDisplay).msecs();
+            updateGUI("onClickLeft");
+        });
 
-            // set a change listener on the SeekBar
-            seekProgress = findViewById(R.id.statebrowse_progress);
-            seekProgress.setText(DateUtil.dateString(MidnightTime.calc(System.currentTimeMillis())));
-            seekBar = findViewById(R.id.statebrowser_seekBar);
-            seekBar.setMax((int)(timePeriod/timeWindow));
-            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+        findViewById(R.id.historybrowse_right).setOnClickListener(v -> {
+            start += T.hours(rangeToDisplay).msecs();
+            updateGUI("onClickRight");
+        });
 
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-                    long date = fromTime +progress * timeWindow;
-                    seekProgress.setText(DateUtil.dateString(MidnightTime.calc(date)));
-                }
+        findViewById(R.id.historybrowse_end).setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            calendar.set(Calendar.MILLISECOND, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            start = calendar.getTimeInMillis();
+            updateGUI("onClickEnd");
+        });
 
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
+        findViewById(R.id.historybrowse_zoom).setOnClickListener(v -> {
+            rangeToDisplay += 6;
+            rangeToDisplay = rangeToDisplay > 24 ? 6 : rangeToDisplay;
+            updateGUI("rangeChange");
+        });
 
-                }
+        findViewById(R.id.historybrowse_zoom).setOnLongClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(start);
+            calendar.set(Calendar.MILLISECOND, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            start = calendar.getTimeInMillis();
+            updateGUI("resetToMidnight");
+            return true;
+        });
 
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
+        findViewById(R.id.historybrowse_date).setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date(start));
+            DatePickerDialog dpd = DatePickerDialog.newInstance(
+                    (view, year, monthOfYear, dayOfMonth) -> {
+                        Date date = new Date(0);
+                        date.setYear(year - 1900);
+                        date.setMonth(monthOfYear);
+                        date.setDate(dayOfMonth);
+                        date.setHours(0);
+                        start = date.getTime();
+                        updateGUI("onClickDate");
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+            dpd.setThemeDark(true);
+            dpd.dismissOnPause(true);
+            dpd.show(getFragmentManager(), "Datepickerdialog");
+        });
 
-                }
-            });
-        } catch (Exception e) {
-            log.info(e.getMessage());
-            log.error("Unhandled exception", e);
-        }
+        bgGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
+        bgGraph.getGridLabelRenderer().reloadStyles();
+        iobGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
+        iobGraph.getGridLabelRenderer().reloadStyles();
+        iobGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
+        bgGraph.getGridLabelRenderer().setLabelVerticalWidth(50);
+        iobGraph.getGridLabelRenderer().setLabelVerticalWidth(50);
+        iobGraph.getGridLabelRenderer().setNumVerticalLabels(5);
+
+        bgGraph.getViewport().setScrollable(true); // enables horizontal scrolling
+        bgGraph.getViewport().setScalable(true); // enables horizontal zooming and scrolling
+
+        setupChartMenu();
     }
 
     @Override
@@ -117,18 +162,24 @@ public class StateDataActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         MainApp.bus().register(this);
-        updateGUI();
+        // set start of current day
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        calendar.set(Calendar.MILLISECOND, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        start = calendar.getTimeInMillis();
+        SystemClock.sleep(1000);
+        updateGUI("onResume");
     }
 
-    @OnClick(R.id.statebrowse_export)
-    void onClickExport() {
-//TODO
-    }
-
-    void updateGUI() {
-        log.debug("updateGUI");
-
+    void updateGUI(String from) {
+        log.debug("updateGUI from: " + from);
         try {
+            if (noProfile == null || buttonDate == null || buttonZoom == null || bgGraph == null || iobGraph == null || seekBar == null)
+                return;
+
             final Profile profile = ProfileFunctions.getInstance().getProfile();
 
             if (profile == null) {
@@ -137,358 +188,249 @@ public class StateDataActivity extends AppCompatActivity {
             } else {
                 noProfile.setVisibility(View.GONE);
             }
+
             final String units = profile.getUnits();
             final double lowLine = OverviewPlugin.getPlugin().determineLowLine(units);
             final double highLine = OverviewPlugin.getPlugin().determineHighLine(units);
 
+            buttonDate.setText(DateUtil.dateAndTimeString(start));
+            buttonZoom.setText(String.valueOf(rangeToDisplay));
+
+            int hoursToFetch;
             final long toTime;
-            toTime = System.currentTimeMillis();
-            fromTime = toTime - timePeriod;
+            final long fromTime;
+            fromTime = start + T.secs(100).msecs();
+            toTime = start + T.hours(rangeToDisplay).msecs();
 
+            log.debug("Period: " + DateUtil.dateAndTimeString(fromTime) + " - " + DateUtil.dateAndTimeString(toTime));
 
-            //  ------------------ Statedata graph
-            List<StateData> stateData =StateDataPlugin.getPlugin().loadData(fromTime,toTime);
-            if (stateData == null || stateData.size() == 0)
-                return;
+            final long pointer = System.currentTimeMillis();
 
-            stateGraph.getSeries().clear();
-            addInRangeArea(fromTime, toTime, lowLine, highLine);
-            int maxY = addStateData(fromTime, toTime, lowLine, highLine,stateData);
-            addBasals(fromTime, toTime, maxY,stateData);
-            addTargetLine(fromTime, toTime,stateData);
-            addTreatments(fromTime, toTime);
+            //  ------------------ 1st graph
 
-            // ------------------ todo navigator
+            final GraphData graphData = new GraphData(bgGraph);
 
+            // **** In range Area ****
+            graphData.addInRangeArea(fromTime, toTime, lowLine, highLine);
+
+            // **** BG ****
+                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null, dataProvider);
+
+            // set manual x bounds to have nice steps
+//            graphData.formatAxis(fromTime, toTime);
+            bgGraph.getViewport().setMaxX(fromTime+6*60*60*1000);
+            bgGraph.getViewport().setMinX(fromTime);
+            bgGraph.getViewport().setXAxisBoundsManual(true);
+            bgGraph.getGridLabelRenderer().setLabelFormatter(new TimeAsXAxisLabelFormatter("HH"));
+            bgGraph.getGridLabelRenderer().setNumHorizontalLabels(7); // only 7 because of the space
+
+            if(SP.getBoolean("showactivityprimary", true)) {
+                graphData.addActivity(fromTime, toTime, false, 1d, dataProvider);
+            }
+
+            // Treatments
+            graphData.addTreatments(fromTime, toTime, dataProvider);
+
+            // add basal data
+            if (SP.getBoolean("showhbasals", true)) {
+                graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d, dataProvider);
+            }
+
+            // add target line
+            graphData.addTargetLine(fromTime, toTime, profile,dataProvider);
+
+            // **** NOW line ****
+            graphData.addNowLine(pointer);
+
+            // ------------------ 2nd graph
+
+            new Thread(() -> {
+                final GraphData secondGraphData = new GraphData(iobGraph);
+
+                boolean useIobForScale = false;
+                boolean useCobForScale = false;
+                boolean useDevForScale = false;
+                boolean useRatioForScale = false;
+                boolean useIAForScale = false;
+                boolean useDSForScale = false;
+
+                if (SP.getBoolean("showhiob", true)) {
+                    useIobForScale = true;
+                } else if (SP.getBoolean("showhcob", true)) {
+                    useCobForScale = true;
+                } else if (SP.getBoolean("showhdeviations", false)) {
+                    useDevForScale = true;
+                } else if (SP.getBoolean("showhratios", false)) {
+                    useRatioForScale = true;
+                } else if (SP.getBoolean("showhactivitysecondary", false)) {
+                    useIAForScale = true;
+                } else if (SP.getBoolean("showhdevslope", false)) {
+                    useDSForScale = true;
+                }
+
+                if (SP.getBoolean("showhiob", true))
+                    secondGraphData.addIob(fromTime, toTime, useIobForScale, 1d,dataProvider);
+                if (SP.getBoolean("showhcob", true))
+                    secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d,dataProvider);
+                if (SP.getBoolean("showhdeviations", false))
+                    secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d,dataProvider);
+                if (SP.getBoolean("showhratios", false))
+                    secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d,dataProvider);
+                if(SP.getBoolean("showhactivitysecondary", true))
+                    secondGraphData.addActivity(fromTime, toTime, useIAForScale,useIAForScale ? 2d: 1d,dataProvider);
+                if (SP.getBoolean("showhdevslope", false) && MainApp.devBranch)
+                    secondGraphData.addDeviationSlope(fromTime, toTime, useDSForScale, 1d,dataProvider);
+
+                // **** NOW line ****
+                // set manual x bounds to have nice steps
+                secondGraphData.formatAxis(fromTime, toTime);
+                secondGraphData.addNowLine(pointer);
+
+                // do GUI update
+                runOnUiThread(() -> {
+                    if (SP.getBoolean("showhiob", true)
+                            || SP.getBoolean("showhcob", true)
+                            || SP.getBoolean("showheviations", false)
+                            || SP.getBoolean("showhratios", false)
+                            || SP.getBoolean("showhactivitysecondary", false)
+                            || SP.getBoolean("showhdevslope", false)) {
+                        iobGraph.setVisibility(View.VISIBLE);
+                    } else {
+                        iobGraph.setVisibility(View.GONE);
+                    }
+                    // finally enforce drawing of graphs
+                    graphData.performUpdate();
+                    if (SP.getBoolean("showhiob", true)
+                            || SP.getBoolean("showhcob", true)
+                            || SP.getBoolean("showheviations", false)
+                            || SP.getBoolean("showhratios", false)
+                            || SP.getBoolean("showhactivitysecondary", false)
+                            || SP.getBoolean("showhdevslope", false))
+                        secondGraphData.performUpdate();
+                });
+            }).start();
         } catch (Exception e) {
-            log.info(e.getMessage());
             log.error("Unhandled exception", e);
         }
     }
 
-    public int addStateData(long fromTime, long toTime, double lowLine, double highLine, List<StateData> stateData) {
-        double maxBg = Double.MIN_VALUE, minBg;
-        double minIOB = 0, maxIOB = 0;
-        double maxCOB = 0;
-        double minAct = 0, maxAct = 0;
-        double minRat = 0, maxRat = 0;
+    private void setupChartMenu() {
+        chartButton = (ImageButton) findViewById(R.id.overview_chartMenuButton);
+        chartButton.setOnClickListener(v -> {
+            MenuItem item,dividerItem;
+            CharSequence title;
+            int titleMaxChars = 0;
+            SpannableString s;
+            android.support.v7.widget.PopupMenu popup = new PopupMenu(v.getContext(), v);
 
-        final Profile profile = ProfileFunctions.getInstance().getProfile();
 
-        bgData = new ScaledDataPoint[stateData.size()];
-        ScaledDataPoint[] iobData = new ScaledDataPoint[stateData.size()];
-        ScaledDataPoint[] cobData = new ScaledDataPoint[stateData.size()];
-        ScaledDataPoint[] ratData = new ScaledDataPoint[stateData.size()];
-        ScaledDataPoint[] actData = new ScaledDataPoint[stateData.size()];
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.basal, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhbasals", true));
 
-        Scale bgScale = new Scale();
-        Scale iobScale = new Scale();
-        Scale cobScale = new Scale();
-        Scale ratScale = new Scale();
-        Scale actScale = new Scale();
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.ACTPRIM.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhactivityprimary", true));
 
-        int ndx = 0;
-        for (StateData state : stateData) {
-            double bg =  Profile.fromMgdlToUnits(state.bg, profile.getUnits());
-            double ratio = (state.sens-1.0d);
-            bgData[ndx] = new ScaledDataPoint(state.date, bg, bgScale);
-            iobData[ndx] = new ScaledDataPoint(state.date, state.iob, iobScale);
-            cobData[ndx] = new ScaledDataPoint(state.date, state.cob, cobScale);
-            ratData[ndx] = new ScaledDataPoint(state.date, ratio, ratScale);
-            actData[ndx] = new ScaledDataPoint(state.date, state.activity, actScale);
+            dividerItem = popup.getMenu().add("");
+            dividerItem.setEnabled(false);
 
-            ndx++;
-        }
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.IOB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_iob));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhiob", true));
 
-        LineGraphSeries<ScaledDataPoint> bgSeries = new LineGraphSeries<>(bgData);
-        LineGraphSeries<ScaledDataPoint> iobSeries = new LineGraphSeries<>(iobData);
-        LineGraphSeries<ScaledDataPoint> cobSeries = new LineGraphSeries<>(cobData);
-        LineGraphSeries<ScaledDataPoint> ratSeries = new LineGraphSeries<>(ratData);
-        LineGraphSeries<ScaledDataPoint> actSeries = new LineGraphSeries<>(actData);
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.COB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_cob));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.cob, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhcob", true));
 
-        maxBg = (profile.getUnits().equals(Constants.MGDL) ? (int) 300 : (int) 16);
-        minBg = -(profile.getUnits().equals(Constants.MGDL) ? (int) 40 : (int) 2);
-        maxAct = 0.05;
-        maxIOB = 10;
-        maxCOB = 50;
-        maxRat = 0.5;
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.DEV.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_deviations));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.deviations, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhdeviations", false));
 
-        bgScale.setMultiplier(1);
-        iobScale.setMultiplier(-minBg / (maxIOB > -minIOB ? maxIOB : -minIOB));
-        cobScale.setMultiplier(-minBg / maxCOB);
-        ratScale.setMultiplier(-minBg / (maxRat > -minRat ? maxRat : -minRat));
-        actScale.setMultiplier(maxBg / maxAct);
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.SEN.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_sensitivity));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.ratio, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhratios", false));
 
-        // Series-specific settings
+            item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.ACTSEC.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
+            title = item.getTitle();
+            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showhactivitysecondary", true));
 
-        // BG
-        bgSeries.setThickness(3);
 
-        // IOB
-//        iobSeries.setDrawBackground(true);
-//        iobSeries.setBackgroundColor(0x80FFFFFF & MainApp.gc(R.color.iob)); //50%
-        iobSeries.setColor(MainApp.gc(R.color.iob));
-        iobSeries.setThickness(1);
-
-        // COB
-//        cobSeries.setDrawBackground(true);
-//        cobSeries.setBackgroundColor(0x80FFFFFF & MainApp.gc(R.color.cob)); //50%
-        cobSeries.setColor(MainApp.gc(R.color.cob));
-        cobSeries.setThickness(1);
-
-        //Ratio
-        ratSeries.setColor(MainApp.gc(R.color.ratio));
-        ratSeries.setThickness(1);
-
-        // Activity
-        actSeries.setDrawBackground(false);
-        actSeries.setColor(MainApp.gc(R.color.activity));
-        actSeries.setThickness(1);
-
-        int numOfVertLines = profile.getUnits().equals(Constants.MGDL) ? (int) ((maxBg-minBg) / 40 + 1) : (int) ((maxBg-minBg) / 2 + 1);
-        stateGraph.getGridLabelRenderer().setNumVerticalLabels(numOfVertLines);
-        stateGraph.getViewport().setMaxY(maxBg);
-        stateGraph.getViewport().setMinY(minBg);
-        stateGraph.getViewport().setYAxisBoundsManual(true);
-
-        stateGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
-        stateGraph.getGridLabelRenderer().reloadStyles();
-        stateGraph.getGridLabelRenderer().setLabelVerticalWidth(50);
-        stateGraph.getGridLabelRenderer().setLabelFormatter(new TimeAsXAxisLabelFormatter("HH:mm"));
-        stateGraph.getGridLabelRenderer().setNumHorizontalLabels(4);
-
-        stateGraph.addSeries(bgSeries);
-        stateGraph.addSeries(iobSeries);
-        stateGraph.addSeries(cobSeries);
-        stateGraph.addSeries(ratSeries);
-        stateGraph.addSeries(actSeries);
-
-        return (int)maxBg;
-    }
-
-    public void addInRangeArea(long fromTime, long toTime, double lowLine, double highLine) {
-        AreaGraphSeries<DoubleDataPoint> inRangeAreaSeries;
-
-        DoubleDataPoint[] inRangeAreaDataPoints = new DoubleDataPoint[]{
-                new DoubleDataPoint(fromTime, lowLine, highLine),
-                new DoubleDataPoint(toTime, lowLine, highLine)
-        };
-        inRangeAreaSeries = new AreaGraphSeries<>(inRangeAreaDataPoints);
-        inRangeAreaSeries.setColor(0);
-        inRangeAreaSeries.setDrawBackground(true);
-        inRangeAreaSeries.setBackgroundColor(MainApp.gc(R.color.inrangebackground));
-
-        stateGraph.addSeries(inRangeAreaSeries);
-    }
-
-    private double getNearestBg(long date) {
-        final Profile profile = ProfileFunctions.getInstance().getProfile();
-        if (bgData == null)
-            return Profile.fromMgdlToUnits(100, profile.getUnits());
-        for (int r = 0; r < bgData.length; r++) {
-            ScaledDataPoint point = bgData[r];
-            if (point.getX() < date || point.getY() == 0) continue;
-            return point.getY();
-        }
-        return bgData.length > 0
-                ? bgData[0].getY() : Profile.fromMgdlToUnits(100, profile.getUnits());
-    }
-
-    public void addTreatments(long fromTime, long endTime) {
-        List<DataPointWithLabelInterface> filteredTreatments = new ArrayList<>();
-
-        StateDataPlugin gdp = StateDataPlugin.getPlugin();
-        List<Treatment> treatments = gdp.getTreatments(fromTime, endTime);
-
-        for (int tx = 0; tx < treatments.size(); tx++) {
-            Treatment t = treatments.get(tx);
-            if (t.isSMB && !t.isValid) continue;
-            t.setY(getNearestBg((long) t.getX()));
-            filteredTreatments.add(t);
-        }
-
-        // ProfileSwitch
-        List<ProfileSwitch> profileSwitches = gdp.getProfileSwitches(fromTime, endTime);
-
-        for (int tx = 0; tx < profileSwitches.size(); tx++) {
-            DataPointWithLabelInterface t = profileSwitches.get(tx);
-            filteredTreatments.add(t);
-        }
-
-        // Extended bolus
-        if (!ConfigBuilderPlugin.getPlugin().getActivePump().isFakingTempsByExtendedBoluses()) {
-            List<ExtendedBolus> extendedBoluses = gdp.getExtendedBoluses(fromTime,endTime);
-
-            for (int tx = 0; tx < extendedBoluses.size(); tx++) {
-                DataPointWithLabelInterface t = extendedBoluses.get(tx);
-                if (t.getDuration() == 0) continue;
-                t.setY(getNearestBg((long) t.getX()));
-                filteredTreatments.add(t);
+            if (MainApp.devBranch) {
+                item = popup.getMenu().add(Menu.NONE, OverviewFragment.CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
+                title = item.getTitle();
+                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+                s = new SpannableString(title);
+                s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.devslopepos, null)), 0, s.length(), 0);
+                item.setTitle(s);
+                item.setCheckable(true);
+                item.setChecked(SP.getBoolean("showhdevslope", false));
             }
-        }
 
-        // Careportal
-        List<CareportalEvent> careportalEvents = gdp.getcareportalEvents(fromTime,endTime);
+            // Fairly good guestimate for required divider text size...
+            title = new String(new char[titleMaxChars+10]).replace("\0", "_");
+            dividerItem.setTitle(title);
 
-        for (int tx = 0; tx < careportalEvents.size(); tx++) {
-            DataPointWithLabelInterface t = careportalEvents.get(tx);
-            t.setY(getNearestBg((long) t.getX()));
-            filteredTreatments.add(t);
-        }
-
-        DataPointWithLabelInterface[] treatmentsArray = new DataPointWithLabelInterface[filteredTreatments.size()];
-        treatmentsArray = filteredTreatments.toArray(treatmentsArray);
-        stateGraph.addSeries(new PointsWithLabelGraphSeries<>(treatmentsArray));
-    }
-
-
-    // scale in % of vertical size (like 0.3)
-    public void addBasals(long fromTime, long toTime, int maxY, List<StateData> stateData) {
-        LineGraphSeries<ScaledDataPoint> basalsLineSeries;
-        LineGraphSeries<ScaledDataPoint> absoluteBasalsLineSeries;
-        LineGraphSeries<ScaledDataPoint> baseBasalsSeries;
-        LineGraphSeries<ScaledDataPoint> tempBasalsSeries;
-
-        double maxBasalValueFound = 0d;
-        Scale basalScale = new Scale();
-
-        List<ScaledDataPoint> baseBasalArray = new ArrayList<>();
-        List<ScaledDataPoint> tempBasalArray = new ArrayList<>();
-        List<ScaledDataPoint> basalLineArray = new ArrayList<>();
-        List<ScaledDataPoint> absoluteBasalLineArray = new ArrayList<>();
-        double lastLineBasal = 0;
-        double lastAbsoluteLineBasal = -1;
-        double lastBaseBasal = 0;
-        double lastTempBasal = 0;
-
-        StateDataPlugin gdp = StateDataPlugin.getPlugin();
-        int ndx = 0;
-        for (StateData state : stateData) {
-            double baseBasalValue = state.basal;
-            double absoluteLineValue = baseBasalValue;
-            double tempBasalValue = 0;
-            double basal = 0d;
-            if (state.isTempBasalRunning) {
-                absoluteLineValue = tempBasalValue = state.tempBasalAbsolute;
-                if (tempBasalValue != lastTempBasal) {
-                    tempBasalArray.add(new ScaledDataPoint(state.date, lastTempBasal, basalScale));
-                    tempBasalArray.add(new ScaledDataPoint(state.date, basal = tempBasalValue, basalScale));
+            popup.setOnMenuItemClickListener(item1 -> {
+                if (item1.getItemId() == OverviewFragment.CHARTTYPE.BAS.ordinal()) {
+                    SP.putBoolean("showhbasals", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.IOB.ordinal()) {
+                    SP.putBoolean("showhiob", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.COB.ordinal()) {
+                    SP.putBoolean("showhcob", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.DEV.ordinal()) {
+                    SP.putBoolean("showhdeviations", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.SEN.ordinal()) {
+                    SP.putBoolean("showhratios", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.ACTPRIM.ordinal()) {
+                    SP.putBoolean("showhactivityprimary", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.ACTSEC.ordinal()) {
+                    SP.putBoolean("showhactivitysecondary", !item1.isChecked());
+                } else if (item1.getItemId() == OverviewFragment.CHARTTYPE.DEVSLOPE.ordinal()) {
+                    SP.putBoolean("showhdevslope", !item1.isChecked());
                 }
-                if (lastBaseBasal != 0d) {
-                    baseBasalArray.add(new ScaledDataPoint(state.date, lastBaseBasal, basalScale));
-                    baseBasalArray.add(new ScaledDataPoint(state.date, 0d, basalScale));
-                    lastBaseBasal = 0d;
-                }
-            } else {
-                if (baseBasalValue != lastBaseBasal) {
-                    baseBasalArray.add(new ScaledDataPoint(state.date, lastBaseBasal, basalScale));
-                    baseBasalArray.add(new ScaledDataPoint(state.date, basal = baseBasalValue, basalScale));
-                    lastBaseBasal = baseBasalValue;
-                }
-                if (lastTempBasal != 0) {
-                    tempBasalArray.add(new ScaledDataPoint(state.date, lastTempBasal, basalScale));
-                    tempBasalArray.add(new ScaledDataPoint(state.date, 0d, basalScale));
-                }
-            }
-
-            if (baseBasalValue != lastLineBasal) {
-                basalLineArray.add(new ScaledDataPoint(state.date, lastLineBasal, basalScale));
-                basalLineArray.add(new ScaledDataPoint(state.date, baseBasalValue, basalScale));
-            }
-            if (absoluteLineValue != lastAbsoluteLineBasal) {
-                absoluteBasalLineArray.add(new ScaledDataPoint(state.date, lastAbsoluteLineBasal, basalScale));
-                absoluteBasalLineArray.add(new ScaledDataPoint(state.date, basal, basalScale));
-            }
-
-            lastAbsoluteLineBasal = absoluteLineValue;
-            lastLineBasal = baseBasalValue;
-            lastTempBasal = tempBasalValue;
-            maxBasalValueFound = Math.max(maxBasalValueFound, Math.max(tempBasalValue, baseBasalValue));
-
-            ndx++;
-        }
-
-        basalLineArray.add(new ScaledDataPoint(toTime, lastLineBasal-2, basalScale));
-        baseBasalArray.add(new ScaledDataPoint(toTime, lastBaseBasal-2, basalScale));
-        tempBasalArray.add(new ScaledDataPoint(toTime, lastTempBasal-2, basalScale));
-        absoluteBasalLineArray.add(new ScaledDataPoint(toTime, lastAbsoluteLineBasal-2, basalScale));
-
-        ScaledDataPoint[] baseBasal = new ScaledDataPoint[baseBasalArray.size()];
-        baseBasal = baseBasalArray.toArray(baseBasal);
-        baseBasalsSeries = new LineGraphSeries<>(baseBasal);
-        baseBasalsSeries.setDrawBackground(true);
-        baseBasalsSeries.setBackgroundColor(MainApp.gc(R.color.basebasal));
-        baseBasalsSeries.setThickness(0);
-
-        ScaledDataPoint[] tempBasal = new ScaledDataPoint[tempBasalArray.size()];
-        tempBasal = tempBasalArray.toArray(tempBasal);
-        tempBasalsSeries = new LineGraphSeries<>(tempBasal);
-        tempBasalsSeries.setDrawBackground(true);
-        tempBasalsSeries.setBackgroundColor(MainApp.gc(R.color.tempbasal));
-        tempBasalsSeries.setThickness(0);
-
-        ScaledDataPoint[] basalLine = new ScaledDataPoint[basalLineArray.size()];
-        basalLine = basalLineArray.toArray(basalLine);
-        basalsLineSeries = new LineGraphSeries<>(basalLine);
-        Paint paint = new Paint();
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(MainApp.instance().getApplicationContext().getResources().getDisplayMetrics().scaledDensity * 2);
-        paint.setPathEffect(new DashPathEffect(new float[]{2, 4}, 0));
-        paint.setColor(MainApp.gc(R.color.basal));
-        basalsLineSeries.setCustomPaint(paint);
-
-        ScaledDataPoint[] absoluteBasalLine = new ScaledDataPoint[absoluteBasalLineArray.size()];
-        absoluteBasalLine = absoluteBasalLineArray.toArray(absoluteBasalLine);
-        absoluteBasalsLineSeries = new LineGraphSeries<>(absoluteBasalLine);
-        Paint absolutePaint = new Paint();
-        absolutePaint.setStyle(Paint.Style.STROKE);
-        absolutePaint.setStrokeWidth(MainApp.instance().getApplicationContext().getResources().getDisplayMetrics().scaledDensity * 2);
-        absolutePaint.setColor(MainApp.gc(R.color.basal));
-        absoluteBasalsLineSeries.setCustomPaint(absolutePaint);
-
-        basalScale.setMultiplier(1);
-
-        stateGraph.addSeries(baseBasalsSeries);
-        stateGraph.addSeries(tempBasalsSeries);
-        stateGraph.addSeries(basalsLineSeries);
-        stateGraph.addSeries(absoluteBasalsLineSeries);
+                updateGUI("onGraphCheckboxesCheckedChanged");
+                return true;
+            });
+            chartButton.setImageResource(R.drawable.ic_arrow_drop_up_white_24dp);
+            popup.setOnDismissListener(menu -> chartButton.setImageResource(R.drawable.ic_arrow_drop_down_white_24dp));
+            popup.show();
+        });
     }
 
-    public void addTargetLine(long fromTime, long toTime, List<StateData> stateData) {
-        final Profile profile = ProfileFunctions.getInstance().getProfile();
-        LineGraphSeries<DataPoint> targetsSeries;
-
-        Scale targetsScale = new Scale();
-        targetsScale.setMultiplier(1);
-
-        List<DataPoint> targetsSeriesArray = new ArrayList<>();
-        double lastTarget = -1;
-        int ndx = 0;
-        for (StateData state : stateData) {
-            long time = state.date;
-            double tt = state.target;
-            double value;
-            if (tt == 0.0d) {
-                value = (profile.getTargetLow(time) + profile.getTargetHigh(time)) / 2;
-            } else {
-                value = Profile.fromMgdlToUnits(tt, profile.getUnits());
-            }
-            if (lastTarget != value) {
-                if (lastTarget != -1)
-                    targetsSeriesArray.add(new DataPoint(time, lastTarget));
-                targetsSeriesArray.add(new DataPoint(time, value));
-            }
-            lastTarget = value;
-        }
-        targetsSeriesArray.add(new DataPoint(toTime, lastTarget));
-
-        DataPoint[] targets = new DataPoint[targetsSeriesArray.size()];
-        targets = targetsSeriesArray.toArray(targets);
-        targetsSeries = new LineGraphSeries<>(targets);
-        targetsSeries.setDrawBackground(false);
-        targetsSeries.setColor(MainApp.gc(R.color.tempTargetBackground));
-        targetsSeries.setThickness(2);
-
-        stateGraph.addSeries(targetsSeries);
-    }
 }
