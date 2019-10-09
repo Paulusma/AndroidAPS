@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.stateviewer;
+package info.nightscout.androidaps.plugins.hm.stateviewer;
 
 import com.squareup.otto.Subscribe;
 
@@ -226,6 +226,7 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
 
     @Override
     protected void onStart() {
+        log.info("");
         MainApp.bus().register(this);
         super.onStart();
 
@@ -248,11 +249,13 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
     }
 
     private void historicDataCleanup() {
+        log.info("historicDataCleanup fired");
         dbHelper.deleteStateDataOlderThan(now()- T.days(90).msecs());
     }
 
     @Override
     protected void onStop() {
+        log.info("");
         super.onStop();
         MainApp.bus().unregister(this);
 

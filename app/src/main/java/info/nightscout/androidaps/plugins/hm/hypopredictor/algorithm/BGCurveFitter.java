@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.algorithm;
+package info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm;
 
 import java.util.List;
 

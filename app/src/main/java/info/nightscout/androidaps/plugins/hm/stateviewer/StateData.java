@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.stateviewer;
+package info.nightscout.androidaps.plugins.hm.stateviewer;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;

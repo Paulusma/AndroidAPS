@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.bgmonitors.hypopredictor.algorithm;
+package info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm;
 
 import org.apache.commons.math3.analysis.ParametricUnivariateFunction;
 import org.apache.commons.math3.exception.InsufficientDataException;

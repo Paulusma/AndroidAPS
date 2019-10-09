@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.bgmonitors;
+package info.nightscout.androidaps.plugins.hm;
 
 import android.content.Context;
 import android.content.res.TypedArray;

@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.stateviewer;
+package info.nightscout.androidaps.plugins.hm.stateviewer;
 
 import android.content.Context;
 import android.database.DatabaseUtils;

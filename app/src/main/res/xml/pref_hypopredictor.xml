@@ -18,42 +18,6 @@
             validate:testType="floatNumericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="15"
-            android:summary="@string/hypoppred_horizon_summary"
-            android:digits="0123456789"
-            android:inputType="number"
-            android:key="@string/key_hypoppred_horizon"
-            android:maxLines="1"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/hypoppred_horizon"
-            validate:maxNumber="120"
-            validate:minNumber="15"
-            validate:testType="numericRange" />
-
-        <SwitchPreference
-            android:defaultValue="false"
-            android:key="@string/key_hypoppred_24hwindow"
-            android:title="@string/hypoppred_24hwindow_title"
-            android:summary="@string/hypoppred_24hwindow_summary"/>
-
-        <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
-            android:defaultValue="0"
-            android:dependency="@string/key_hypoppred_24hwindow"
-            android:title="@string/hypoppred_window_from"
-            android:key="@string/key_hypoppred_window_from"
-            android:summary="@string/hypoppred_window_from_summary"
-            />
-
-        <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
-            android:defaultValue="24"
-            android:dependency="@string/key_hypoppred_24hwindow"
-            android:title="@string/hypoppred_window_to"
-            android:key="@string/key_hypoppred_window_to"
-            android:summary="@string/hypoppred_window_to_summary"
-            />
-
-        <com.andreabaccega.widget.ValidatingEditTextPreference
             android:defaultValue="0.0"
             android:summary="@string/hypoppred_TT_bg_summary"
             android:inputType="numberDecimal"
@@ -78,6 +42,43 @@
             validate:maxNumber="60"
             validate:minNumber="0"
             validate:testType="numericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="15"
+            android:summary="@string/hypoppred_horizon_summary"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="@string/key_hypoppred_horizon"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/hypoppred_horizon"
+            validate:maxNumber="120"
+            validate:minNumber="15"
+            validate:testType="numericRange" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_24hwindow_title"
+            android:summary="@string/hypoppred_24hwindow_summary"/>
+
+        <info.nightscout.androidaps.plugins.hm.TimePreference
+            android:defaultValue="0"
+            android:dependency="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_window_from"
+            android:key="@string/key_hypoppred_window_from"
+            android:summary="@string/hypoppred_window_from_summary"
+            />
+
+        <info.nightscout.androidaps.plugins.hm.TimePreference
+            android:defaultValue="24"
+            android:dependency="@string/key_hypoppred_24hwindow"
+            android:title="@string/hypoppred_window_to"
+            android:key="@string/key_hypoppred_window_to"
+            android:summary="@string/hypoppred_window_to_summary"
+            />
+
         <PreferenceScreen android:title="@string/hypoppred_algorithm">
 
             <SwitchPreference

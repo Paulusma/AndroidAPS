@@ -12,7 +12,7 @@
         android:title="@string/droptarget_24hwindow_title"
         android:summary="@string/droptarget_24hwindow_summary"/>
 
-    <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
+    <info.nightscout.androidaps.plugins.hm.TimePreference
         android:defaultValue="0"
         android:dependency="@string/key_droptarget_24hwindow"
         android:title="@string/droptarget_window_from"
@@ -20,7 +20,7 @@
         android:summary="@string/droptarget_window_from_summary"
         />
 
-    <info.nightscout.androidaps.plugins.general.bgmonitors.TimePreference
+    <info.nightscout.androidaps.plugins.hm.TimePreference
         android:defaultValue="24"
         android:dependency="@string/key_droptarget_24hwindow"
         android:title="@string/droptarget_window_to"

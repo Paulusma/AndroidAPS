@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.general.stateviewer;
+package info.nightscout.androidaps.plugins.hm.stateviewer;
 
 import android.os.Bundle;
 import android.os.SystemClock;
