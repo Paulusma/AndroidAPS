@@ -38,7 +38,7 @@ import info.nightscout.androidaps.plugins.constraints.dstHelper.DstHelperPlugin;
 import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
 import info.nightscout.androidaps.plugins.constraints.storage.StorageConstraintPlugin;
 import info.nightscout.androidaps.plugins.general.actions.ActionsFragment;
-import info.nightscout.androidaps.plugins.hm.stateviewer.dropbgtarget.DropBGTargetPlugin;
+import info.nightscout.androidaps.plugins.hm.dropbgtarget.DropBGTargetPlugin;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalPlugin;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
