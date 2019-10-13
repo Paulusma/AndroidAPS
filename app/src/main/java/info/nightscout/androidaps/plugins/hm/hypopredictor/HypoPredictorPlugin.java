@@ -627,7 +627,7 @@ public class HypoPredictorPlugin extends PluginBase {
                         mCurrentProfile.getUnits());
                 double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
                 gramCarbs30Min = (mCurrentProfile.getIc() * (lowLevel - hypo.getBgAt30Min()) / sens);
-                gramCarbs60Min = (mCurrentProfile.getIc() * (hypo.getBgAt60Min() - hypo.getBgAt30Min()) / sens);
+                gramCarbs60Min = (mCurrentProfile.getIc() * (hypo.getBgAt30Min() - hypo.getBgAt60Min()) / sens);
                 if (gramCarbs30Min > 0) {
                     log.info("Carbs required before recent carb correction: " + gramCarbs30Min);
                     // Correct for carb intake since start of hypo
@@ -648,9 +648,9 @@ public class HypoPredictorPlugin extends PluginBase {
             }
             String sMins, sCarbs = "";
             int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
-            int dextros60Min = (int) Math.ceil(gramCarbs30Min+gramCarbs60Min / 2.5) - dextros30Min;
+            int dextros60Min = (int) Math.ceil((gramCarbs30Min+gramCarbs60Min) / 2.5) - dextros30Min;
             if (gramCarbs30Min > 0) {
-                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, dextros30Min,(dextros60Min>0?dextros60Min:0.0));
+                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, dextros30Min,(dextros60Min>0?dextros60Min:0));
                 if (inMins > 0)
                     sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
                 else
@@ -667,9 +667,9 @@ public class HypoPredictorPlugin extends PluginBase {
                 }
 
                 log.info("Alarm raised.");
+                SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
             } else
                 log.info("No alarm raised (no carbs required)");
-            SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
         } else
             log.info("Snooze time not passed.");
     }

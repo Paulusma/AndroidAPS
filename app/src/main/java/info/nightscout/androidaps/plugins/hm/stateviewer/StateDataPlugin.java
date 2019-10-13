@@ -308,9 +308,6 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
                 log.info("Exit: profile NULL!");
                 return;
             }
-            // TODO non-BG data lag 5 mins behind?! (including BG target!)
-            // TODO some points seem shifted?
-            // TODO missed BG-readings are not properly restored after they are delayed-received
 
             // From graphdata...
             final IobTotal bolusIob = TreatmentsPlugin.getPlugin().getCalculationToTimeTreatments(time);
