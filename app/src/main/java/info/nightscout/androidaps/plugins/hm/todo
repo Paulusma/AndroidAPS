@@ -1,0 +1,7 @@
+
+TODO: pre-set start-of-day meal/bolus
+
+Hypopredictor:
+TODO 0-temp if BG < 4 mmol
+TODO if BG < 4 for > 1hr raise alarm
+TODO end low TT: compensate for any negative IOB in period that BG < 4 by fictuous bolus? (negative IOB causes high-temps on hypo carbs)

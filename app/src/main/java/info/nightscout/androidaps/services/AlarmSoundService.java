@@ -58,10 +58,21 @@ public class AlarmSoundService extends Service {
         } catch (IOException e) {
             log.error("Unhandled exception", e);
         }
-        player.setLooping(true); // Set looping
         AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         if (manager == null || !manager.isMusicActive()) {
-      //      player.setVolume(100, 100);
+            if (resourceId == R.raw.didyoueat) {
+                player.setLooping(false); // Set looping
+                player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        onDestroy();
+                    }
+
+                });
+            }else {
+                player.setLooping(true); // Set looping
+            }
             if(volumeBeforeAlert == -1) { //TODO test operation whit 2 or more simultaneous notifications
                 volumeBeforeAlert = manager.getStreamVolume(AudioManager.STREAM_MUSIC);
                 int index = (int)manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)/2;
@@ -72,7 +83,7 @@ public class AlarmSoundService extends Service {
         try {
             player.prepare();
             player.start();
-        } catch (IOException e) {
+            } catch (IOException e) {
             log.error("Unhandled exception", e);
         }
 

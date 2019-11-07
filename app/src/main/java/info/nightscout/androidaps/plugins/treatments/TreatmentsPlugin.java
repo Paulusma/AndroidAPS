@@ -235,13 +235,16 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
 
     @Override
     public MealData getMealData() {
+        return getMealData(System.currentTimeMillis());
+    }
+
+    public MealData getMealData(long atTime) {
         MealData result = new MealData();
 
         Profile profile = ProfileFunctions.getInstance().getProfile();
         if (profile == null) return result;
 
-        long now = System.currentTimeMillis();
-        long dia_ago = now - (Double.valueOf(profile.getDia() * T.hours(1).msecs())).longValue();
+        long dia_ago = atTime - (Double.valueOf(profile.getDia() * T.hours(1).msecs())).longValue();
 
         double maxAbsorptionHours = Constants.DEFAULT_MAX_ABSORPTION_TIME;
         if (SensitivityAAPSPlugin.getPlugin().isEnabled(PluginType.SENSITIVITY) || SensitivityWeightedAveragePlugin.getPlugin().isEnabled(PluginType.SENSITIVITY)) {
@@ -249,7 +252,7 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
         } else {
             maxAbsorptionHours = SP.getDouble(R.string.key_absorption_cutoff, Constants.DEFAULT_MAX_ABSORPTION_TIME);
         }
-        long absorptionTime_ago = now - (Double.valueOf(maxAbsorptionHours * T.hours(1).msecs())).longValue();
+        long absorptionTime_ago = atTime - (Double.valueOf(maxAbsorptionHours * T.hours(1).msecs())).longValue();
 
         synchronized (treatments) {
             for (Treatment treatment : treatments) {
@@ -257,13 +260,13 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
                     continue;
                 long t = treatment.date;
 
-                if (t > dia_ago && t <= now) {
+                if (t > dia_ago && t <= atTime) {
                     if (treatment.insulin > 0 && treatment.mealBolus) {
                         result.boluses += treatment.insulin;
                     }
                 }
 
-                if (t > absorptionTime_ago && t <= now) {
+                if (t > absorptionTime_ago && t <= atTime) {
                     if (treatment.carbs >= 1) {
                         result.carbs += treatment.carbs;
                         if (t > result.lastCarbTime)

@@ -1,5 +1,7 @@
 package info.nightscout.androidaps.plugins.hm.hypopredictor;
 
+import android.content.Intent;
+
 import com.squareup.otto.Subscribe;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -14,6 +16,7 @@ import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainActivity;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.Source;
@@ -29,21 +32,22 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.APSResult;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.BGCurveFitter;
-import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.ExponentialBGCurveFitter;
-import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.LinearBGCurveFitter;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.overview.dialogs.NewCarbsDialog;
 import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.NotificationWithAction;
+import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.BGCurveFitter;
+import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.ExponentialBGCurveFitter;
+import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.LinearBGCurveFitter;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
 
@@ -247,8 +251,7 @@ public class HypoPredictorPlugin extends PluginBase {
 
         return fit;
     }
-//TODO 0-temp if BG < 4 mmol
-//TODO if BG < 4 for > 1hr raise alarm
+
     private void executeCheck() {
         List<BGLow> detectedLowsAndHypos = new ArrayList<>();
         try {
@@ -286,8 +289,10 @@ public class HypoPredictorPlugin extends PluginBase {
             BGLow hypo = getImminentHypo(detectedLowsAndHypos);
             if (hypo != null) {
                 executeHypoAlert(hypo);
-            } else
+            } else{
+                SP.putLong("hypoStart", now()+60*60*1000); // hypo has not yet started => set to some future time
                 log.info("No imminent hypo");
+            }
         } catch (Exception e) {
             log.error("Unhandled exception", e);
             log.info("ERROR: " + e.getMessage());
@@ -381,7 +386,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 .low(target)
                 .high(target));
     }
-//TODO compensate for any negative IOB in period that BG < 4 by fictuous bolus. (negative IOB causes high-temps on hypo carbs)
+
     private void endLowTT() {
         long waitTimeMins = SP.getLong(R.string.key_hypoppred_waittime, 0L);
         if (now() < mTimeDetectConditionLastSatisfied + waitTimeMins * 60 * 1000) {
@@ -610,15 +615,34 @@ public class HypoPredictorPlugin extends PluginBase {
     /**
      * Sound alarm. If condition persists alarm will again be sounded in 15 min.
      */
-    //TODO: carbs from wizard or SMB asset code (look for requiredcarbs), carbs immediate (15min?) and later (1h?)
     private void executeHypoAlert(BGLow hypo) {
         long nextHypoAlarm = SP.getLong("nextHypoAlarm", 0L);
         if (nextHypoAlarm <= now()) {
+
+            if(mCobInfo.futureCarbs>0){
+                log.info("Skip hypo alert: futurecarbs present");
+                return;
+            }
+
+            long hypoStart = SP.getLong("hypoStart", now());
+            MealData mealData = TreatmentsPlugin.getPlugin().getMealData();
+            if(now() < hypoStart && mLastStatus.glucose > 3*18 && Math.ceil(mealData.mealCOB - 0.25*mealData.carbs)>5){
+                // If enough meal carbs remain issue a warning instead of alert
+                Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
+                alarm.putExtra("soundid", R.raw.didyoueat);
+                MainApp.instance().startService(alarm);
+                log.info("Hypo but COB: warning issued (did you eat)?");
+                SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
+                return;
+            }
+
             if (nextHypoAlarm < now() - 20 * 60 * 1000) {
                 // new hypo
                 SP.putLong("hypoStart", now());
+                hypoStart = now();
                 log.info("Start of hypo");
             }
+
             double gramCarbs30Min=0,gramCarbs60Min=0;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
             if (hypo.getLowestBGMins() != -1) {
@@ -631,7 +655,6 @@ public class HypoPredictorPlugin extends PluginBase {
                 if (gramCarbs30Min > 0) {
                     log.info("Carbs required before recent carb correction: " + gramCarbs30Min);
                     // Correct for carb intake since start of hypo
-                    long hypoStart = SP.getLong("hypoStart", now());
                     List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
                     for (Treatment treatment : treatments) {
                         if (treatment.isValid
