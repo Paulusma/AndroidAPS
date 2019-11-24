@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * This is a lazy loading singleton only loaded when actually used.
  * */
 
-object VersionCheckerPlugin : PluginBase(PluginDescription()
+object VersionCheckxerPlugin : PluginBase(PluginDescription()
         .mainType(PluginType.CONSTRAINTS)
         .neverVisible(true)
         .alwaysEnabled(true)

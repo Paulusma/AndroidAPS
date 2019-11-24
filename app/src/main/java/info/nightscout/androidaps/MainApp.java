@@ -38,11 +38,8 @@ import info.nightscout.androidaps.plugins.constraints.dstHelper.DstHelperPlugin;
 import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
 import info.nightscout.androidaps.plugins.constraints.storage.StorageConstraintPlugin;
 import info.nightscout.androidaps.plugins.general.actions.ActionsFragment;
-import info.nightscout.androidaps.plugins.hm.dropbgtarget.DropBGTargetPlugin;
-import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalPlugin;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
-import info.nightscout.androidaps.plugins.hm.stateviewer.StateDataPlugin;
 import info.nightscout.androidaps.plugins.general.maintenance.LoggerUtils;
 import info.nightscout.androidaps.plugins.general.maintenance.MaintenancePlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSClientPlugin;
@@ -52,9 +49,11 @@ import info.nightscout.androidaps.plugins.general.nsclient.receivers.DBAccessRec
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.persistentNotification.PersistentNotificationPlugin;
 import info.nightscout.androidaps.plugins.general.smsCommunicator.SmsCommunicatorPlugin;
-import info.nightscout.androidaps.plugins.general.versionChecker.VersionCheckerPlugin;
 import info.nightscout.androidaps.plugins.general.wear.WearPlugin;
 import info.nightscout.androidaps.plugins.general.xdripStatusline.StatuslinePlugin;
+import info.nightscout.androidaps.plugins.hm.dropbgtarget.DropBGTargetPlugin;
+import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
+import info.nightscout.androidaps.plugins.hm.stateviewer.StateDataPlugin;
 import info.nightscout.androidaps.plugins.insulin.InsulinOrefFreePeakPlugin;
 import info.nightscout.androidaps.plugins.insulin.InsulinOrefRapidActingPlugin;
 import info.nightscout.androidaps.plugins.insulin.InsulinOrefUltraRapidActingPlugin;
@@ -90,8 +89,6 @@ import info.nightscout.androidaps.receivers.NSAlarmReceiver;
 import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.utils.FabricPrivacy;
 import io.fabric.sdk.android.Fabric;
-
-import static info.nightscout.androidaps.plugins.general.versionChecker.VersionCheckerUtilsKt.triggerCheckVersion;
 
 
 public class MainApp extends Application {
@@ -154,7 +151,7 @@ public class MainApp extends Application {
         registerLocalBroadcastReceiver();
 
         //trigger here to see the new version on app start after an update
-        triggerCheckVersion();
+//        triggerCheckVersion();
 
         if (pluginsList == null) {
             pluginsList = new ArrayList<>();
@@ -189,7 +186,7 @@ public class MainApp extends Application {
             pluginsList.add(HypoPredictorPlugin.getPlugin());
             pluginsList.add(DropBGTargetPlugin.getPlugin());
             if (Config.SAFETY) pluginsList.add(SafetyPlugin.getPlugin());
-            if (Config.SAFETY) pluginsList.add(VersionCheckerPlugin.INSTANCE);
+//            if (Config.SAFETY) pluginsList.add(VersionCheckerPlugin.INSTANCE);
             if (Config.SAFETY) pluginsList.add(StorageConstraintPlugin.getPlugin());
     //        if (Config.APS) pluginsList.add(ObjectivesPlugin.getPlugin());
             pluginsList.add(StateDataPlugin.getPlugin());
