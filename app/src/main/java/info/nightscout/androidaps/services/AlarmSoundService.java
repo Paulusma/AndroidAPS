@@ -60,13 +60,17 @@ public class AlarmSoundService extends Service {
         }
         AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         if (manager == null || !manager.isMusicActive()) {
-            if (resourceId == R.raw.didyoueat) {
+            if (resourceId != R.raw.alarm && resourceId != R.raw.boluserror && resourceId != R.raw.error && resourceId != R.raw.urgentalarm  ) {
                 player.setLooping(false); // Set looping
                 player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 
                     @Override
                     public void onCompletion(MediaPlayer mp) {
-                        onDestroy();
+                        if(volumeBeforeAlert != -1) {
+                            AudioManager manager = (AudioManager) MainApp.instance().getSystemService(Context.AUDIO_SERVICE);
+                            manager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeBeforeAlert, 0);
+                            volumeBeforeAlert = -1;
+                        }
                     }
 
                 });
@@ -94,13 +98,6 @@ public class AlarmSoundService extends Service {
     public void onDestroy() {
         if (player != null) {
             player.stop();
-
-            if(volumeBeforeAlert != -1) {
-                AudioManager manager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
-                manager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeBeforeAlert, 0);
-                volumeBeforeAlert = -1;
-            }
-
             player.release();
         }
 

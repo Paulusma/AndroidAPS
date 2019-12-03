@@ -27,6 +27,7 @@ import info.nightscout.androidaps.data.NonOverlappingIntervals;
 import info.nightscout.androidaps.data.OverlappingIntervals;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileIntervals;
+import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.androidaps.db.ProfileSwitch;
 import info.nightscout.androidaps.db.TempTarget;
@@ -48,6 +49,7 @@ import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.overview.dialogs.ErrorHelperActivity;
 import info.nightscout.androidaps.plugins.general.overview.events.EventDismissNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityAAPSPlugin;
@@ -524,12 +526,17 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
             Treatment carbsTreatment = new Treatment();
             carbsTreatment.source = detailedBolusInfo.source;
             carbsTreatment.pumpId = detailedBolusInfo.pumpId; // but this should never happen
-            carbsTreatment.date = detailedBolusInfo.date + detailedBolusInfo.carbTime * 60 * 1000L + 1000L; // add 1 sec to make them different records
             carbsTreatment.carbs = detailedBolusInfo.carbs;
-            carbsTreatment.source = detailedBolusInfo.source;
+            if(MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && detailedBolusInfo.eventType == CareportalEvent.BOLUSWIZARD){
+                carbsTreatment.date = detailedBolusInfo.date + 60 * 60 * 1000L; // MealAdvisorPlugin: start eating in at least 1 hr
+                detailedBolusInfo.carbTime = 0;
+                detailedBolusInfo.carbs = 0.0;
+            }else {
+                carbsTreatment.date = detailedBolusInfo.date + detailedBolusInfo.carbTime * 60 * 1000L + 1000L; // add 1 sec to make them different records
+            }
             getService().createOrUpdate(carbsTreatment);
             //log.debug("Adding new Treatment record" + carbsTreatment);
-        }
+         }
         if (newRecordCreated && detailedBolusInfo.isValid)
             NSUpload.uploadTreatmentRecord(detailedBolusInfo);
 

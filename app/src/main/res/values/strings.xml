@@ -1422,6 +1422,16 @@
     <string name="hgd_provider">HistoryCollector</string>
     <string name="nav_historyviewer">State history</string>
     <string name="nav_stateviewer">Historic state</string>
+    <string name="mealadvisor">Advice on when to start eating</string>
+    <string name="mealadvisor_shortname">MealAdvisor</string>
+    <string name="description_mealadvisor">Determines the otimum time to start eating a future meal</string>
+    <string name="mealadvisor_settings">Advice on when to start a meal</string>
+    <string name="key_mealadvisor_startbg">mealadvisor_startbg</string>
+    <string name="key_mealadvisor_minsprewarn">mealadvisor_minsprewarn</string>
+    <string name="mealadvisor_startbg">Threshold BG to start eating</string>
+    <string name="mealadvisor_startbg_summary">Threshold BG to start eating</string>
+    <string name="mealadvisor_minsprewarn">Mins to warn before start eating</string>
+    <string name="mealadvisor_minsprewarn_summary">Mins to warn before start eating</string>
 
     <string-array name="logcat_spinner">
         <item>Verbose</item>

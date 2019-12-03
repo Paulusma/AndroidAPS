@@ -500,6 +500,23 @@ public class TreatmentService extends OrmLiteBaseService<DatabaseHelper> {
         return new ArrayList<>();
     }
 
+    public List<Treatment> getCarbDataFromTime(long mills, boolean ascending) {
+        try {
+            Dao<Treatment, Long> daoTreatments = getDao();
+            List<Treatment> treatments;
+            QueryBuilder<Treatment, Long> queryBuilder = daoTreatments.queryBuilder();
+            queryBuilder.orderBy("date", ascending);
+            Where where = queryBuilder.where();
+            where.ge("date", mills).and().gt("carbs", 0.0);
+            PreparedQuery<Treatment> preparedQuery = queryBuilder.prepare();
+            treatments = daoTreatments.query(preparedQuery);
+            return treatments;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<>();
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

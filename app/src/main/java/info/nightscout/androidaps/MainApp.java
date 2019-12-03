@@ -53,6 +53,7 @@ import info.nightscout.androidaps.plugins.general.wear.WearPlugin;
 import info.nightscout.androidaps.plugins.general.xdripStatusline.StatuslinePlugin;
 import info.nightscout.androidaps.plugins.hm.dropbgtarget.DropBGTargetPlugin;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
 import info.nightscout.androidaps.plugins.hm.stateviewer.StateDataPlugin;
 import info.nightscout.androidaps.plugins.insulin.InsulinOrefFreePeakPlugin;
 import info.nightscout.androidaps.plugins.insulin.InsulinOrefRapidActingPlugin;
@@ -185,6 +186,7 @@ public class MainApp extends Application {
             pluginsList.add(TreatmentsPlugin.getPlugin());
             pluginsList.add(HypoPredictorPlugin.getPlugin());
             pluginsList.add(DropBGTargetPlugin.getPlugin());
+            pluginsList.add(MealAdvisorPlugin.getPlugin());
             if (Config.SAFETY) pluginsList.add(SafetyPlugin.getPlugin());
 //            if (Config.SAFETY) pluginsList.add(VersionCheckerPlugin.INSTANCE);
             if (Config.SAFETY) pluginsList.add(StorageConstraintPlugin.getPlugin());

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:validate="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:key="mealadvisor"
+        android:title="@string/mealadvisor_settings">
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="6.0"
+            android:summary="@string/mealadvisor_startbg_summary"
+            android:inputType="numberDecimal"
+            android:key="@string/key_mealadvisor_startbg"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/mealadvisor_startbg"
+            validate:floatminNumber="4.0"
+            validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="5"
+            android:summary="@string/mealadvisor_minsprewarn_summary"
+            android:digits="0123456789"
+            android:inputType="number"
+            android:key="@string/key_mealadvisor_minsprewarn"
+            android:maxLines="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/mealadvisor_minsprewarn"
+            validate:maxNumber="30"
+            validate:minNumber="0"
+            validate:testType="numericRange" />
+
+    </PreferenceCategory>
+</PreferenceScreen>

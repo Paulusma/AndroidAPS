@@ -113,6 +113,10 @@ public class DateUtil {
         return new DateTime(mills).toString(DateTimeFormat.shortTime());
     }
 
+    public static String timeStringSeconds(long mills) {
+        return new DateTime(mills).toString(DateTimeFormat.forPattern("HH:mm:ss"));
+    }
+
     public static String timeFullString(long mills) {
         return new DateTime(mills).toString(DateTimeFormat.fullTime());
     }
