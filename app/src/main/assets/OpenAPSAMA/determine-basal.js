@@ -79,43 +79,10 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
 
     var max_iob = profile.max_iob; // maximum amount of non-bolus IOB OpenAPS will ever deliver
 
-
-//!!! force long lasting highs & lows to normal by increasing differences from target BG level
-//!!! Bit crude but much simpeler than altering all calculations individually
-/*
-    rT.reason += "Attempt to force long lasting highs/lows to norm: adj BG "+bg.toFixed(2);
-    if(bg>target_bg){
-        bg = bg +2*(exp(((bg-target_bg)/target_bg)^2)-1);
-    }
-    rT.reason += " to "+bg.toFixed(2)+". ";
-*/
-
-//!!! force long lasting high to low by artificially increasing BG level
-//!!! Bit crude but much simpeler than altering all calculations individually
-/*
-
-*/
     var maxSafeBasal = tempBasalFunctions.getMaxSafeBasal(profile);
     var maxChangePercent = profile.percentMinChangeChange;
     var rTreason = "";
     rTreason += "Min. rate change: "+ maxChangePercent.toFixed(0)+"%;";
-    /*
-//!!!
-    if((bg > 7*18 && glucose_status.short_avgdelta >= 5)){
-        rTreason += "Overshooting to large high protection (short delta = "+glucose_status.short_avgdelta.toFixed(0)+"): adj BG "+convert_bg(bg, profile)
-            + " and maxSafeBasal "+maxSafeBasal.toFixed(1);
-        bg = bg + 2*(bg-7*18);
-        maxSafeBasal = 2*maxSafeBasal;
-        rTreason += " to "+convert_bg(bg, profile)+" and "+maxSafeBasal.toFixed(1)+" respectively. ";
-    }else
-    */
-
-//!!!
-    if(bg > 12*18 && (glucose_status.short_avgdelta <= 5 && glucose_status.short_avgdelta >= -5)){
-        rTreason += "Stable high prevention (short delta = "+glucose_status.short_avgdelta.toFixed(0)+"): adj BG "+convert_bg(bg, profile);
-        bg = bg + 2*(bg-10*18);
-        rTreason += " to "+convert_bg(bg, profile)+". ";
-    }
 
     // if target_bg is set, great. otherwise, if min and max are set, then set target to their average
     var target_bg;
@@ -172,21 +139,6 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     }
 
     var sens = profile.sens;
-
-    //!!! Lower target if BG level reasonably stable for some time, no carbs left and only small amount of insulin
-    /*
-    //TODO: tijdelijk uitgezet: interfereert met hypo detectie. Omzetten naar een plugin a la hypodetectie!
-    if( (glucose_status.short_avgdelta < 3 && glucose_status.short_avgdelta > -3)
-        && (glucose_status.long_avgdelta < 3 && glucose_status.long_avgdelta > -3)
-        && (glucose_status.delta < 3 && glucose_status.delta > -3)
-        && bg - iob_data.iob * sens > 4*18
-        && meal_data.mealCOB == 0){
-            target_bg = 5*18;
-            min_bg = 5*18;
-            max_bg = 5*18;
-            rTreason += "Stable BG, no COB and small amount of IOB: dropping target to 5; "
-    }
-*/
     var tick;
 
     if (glucose_status.delta > -0.5) {

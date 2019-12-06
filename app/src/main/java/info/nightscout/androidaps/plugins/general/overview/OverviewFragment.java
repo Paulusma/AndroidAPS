@@ -83,12 +83,9 @@ import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.aps.loop.events.EventNewOpenLoopNotification;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment;
 import info.nightscout.androidaps.plugins.general.careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.general.careportal.OptionsToShow;
-import info.nightscout.androidaps.plugins.hm.stateviewer.GraphDataProvider;
-import info.nightscout.androidaps.plugins.hm.stateviewer.GraphDataHelper;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSettingsStatus;
@@ -100,6 +97,10 @@ import info.nightscout.androidaps.plugins.general.overview.dialogs.NewTreatmentD
 import info.nightscout.androidaps.plugins.general.overview.dialogs.WizardDialog;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
 import info.nightscout.androidaps.plugins.general.wear.ActionStringHandler;
+import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
+import info.nightscout.androidaps.plugins.hm.stateviewer.GraphDataHelper;
+import info.nightscout.androidaps.plugins.hm.stateviewer.GraphDataProvider;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
@@ -277,6 +278,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         treatmentButton.setOnClickListener(this);
         wizardButton = (SingleClickButton) view.findViewById(R.id.overview_wizardbutton);
         wizardButton.setOnClickListener(this);
+
+        wizardButton.setOnLongClickListener(this);
         insulinButton = (SingleClickButton) view.findViewById(R.id.overview_insulinbutton);
         if (insulinButton != null)
             insulinButton.setOnClickListener(this);
@@ -354,7 +357,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             else
                 predictionsAvailable = false;
 
-            MenuItem item,dividerItem;
+            MenuItem item, dividerItem;
             CharSequence title;
             int titleMaxChars = 0;
             SpannableString s;
@@ -362,7 +365,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (predictionsAvailable) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.PRE.ordinal(), Menu.NONE, "Predictions");
                 title = item.getTitle();
-                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+                if (titleMaxChars < title.length()) titleMaxChars = title.length();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.prediction, null)), 0, s.length(), 0);
                 item.setTitle(s);
@@ -372,7 +375,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.BAS.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_basals));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.basal, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -381,7 +384,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACTPRIM.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -393,7 +396,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.IOB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_iob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -402,7 +405,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.COB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_cob));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.cob, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -411,7 +414,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEV.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_deviations));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.deviations, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -420,7 +423,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.SEN.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_sensitivity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.ratio, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -429,7 +432,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ACTSEC.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_activity));
             title = item.getTitle();
-            if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+            if (titleMaxChars < title.length()) titleMaxChars = title.length();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.activity, null)), 0, s.length(), 0);
             item.setTitle(s);
@@ -439,7 +442,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (MainApp.devBranch) {
                 item = popup.getMenu().add(Menu.NONE, CHARTTYPE.DEVSLOPE.ordinal(), Menu.NONE, "Deviation slope");
                 title = item.getTitle();
-                if (titleMaxChars < title.length()) titleMaxChars =  title.length();
+                if (titleMaxChars < title.length()) titleMaxChars = title.length();
                 s = new SpannableString(title);
                 s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.devslopepos, null)), 0, s.length(), 0);
                 item.setTitle(s);
@@ -448,7 +451,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
 
             // Fairly good guestimate for required divider text size...
-            title = new String(new char[titleMaxChars+10]).replace("\0", "_");
+            title = new String(new char[titleMaxChars + 10]).replace("\0", "_");
             dividerItem.setTitle(title);
 
             popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -777,15 +780,16 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     }
 
     public void execWizard(QuickWizardEntry entry) {
-        if(entry != null) {
+        if (entry != null) {
             FragmentManager manager = getFragmentManager();
             WizardDialog wizardDialog = new WizardDialog();
             String meal = entry.buttonText();
-            if(meal.startsWith("Aantal KH"))
+            if (meal.startsWith("Aantal KH"))
                 wizardDialog.SetInitialValues(entry.carbs().doubleValue(), "Aantal KH");
             else
                 wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.buttonText());
-            wizardDialog.show(manager, "WizardDialog");        }
+            wizardDialog.show(manager, "WizardDialog");
+        }
     }
 
     @Override
@@ -795,7 +799,34 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 Intent i = new Intent(v.getContext(), QuickWizardListActivity.class);
                 startActivity(i);
                 return true;
+
+            case R.id.overview_wizardbutton:
+                if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
+                    double mealCarbs = MealAdvisorPlugin.getPlugin().getScheduledCarbs();
+                    if (mealCarbs > 0) {
+                        String mealNotes = MealAdvisorPlugin.getPlugin().getMealNotes();
+                        String mealStart = MealAdvisorPlugin.getPlugin().getMealTime();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                        builder.setTitle(mealStart+": "+mealNotes);
+                        builder.setMessage("Ingeplande maaltijd starten\nof verwijderen?\n\n(of druk op 'Afbreken'\n om dit scherm te sluiten)");
+                        builder.setPositiveButton("Start", (dialog, id) -> {
+                            if (MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal)) {
+                                wizardButton.setText("");
+                                ToastUtils.showToastInUiThread(getContext(), "Maaltijd gestart");
+                            } else
+                                ToastUtils.showToastInUiThread(getContext(), "Geen BG metingen\n.Maaltijd kan nog niet gestart worden!");
+                        });
+                        builder.setNegativeButton("Verwijderen", (dialog, id) -> {
+                            MealAdvisorPlugin.getPlugin().resetState();
+                            wizardButton.setText("");
+                        });
+                        builder.setNeutralButton("Afbreken", null);
+                        builder.show();
+                    }
+                }
+                return true;
         }
+
         return false;
     }
 
@@ -829,7 +860,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         final String profileName = ProfileFunctions.getInstance().getProfileName();
         final PumpInterface pump = ConfigBuilderPlugin.getPlugin().getActivePump();
 
-        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
+        final QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null, "");
         if (quickWizardEntry != null && actualBg != null && profile != null && pump != null) {
             quickWizardButton.setVisibility(View.VISIBLE);
             final BolusWizard wizard = quickWizardEntry.doCalc(profile, profileName, actualBg, true);
@@ -1021,6 +1052,13 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             return;
         }
         loopStatusLayout.setVisibility(View.VISIBLE);
+
+        if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
+            int mealCarbs = (int) MealAdvisorPlugin.getPlugin().getScheduledCarbs();
+            String mealTime = MealAdvisorPlugin.getPlugin().getMealTime();
+            if (mealCarbs > 0)
+                wizardButton.setText("" + mealCarbs + (mealTime.equals("") ? "" : "@" + mealTime));
+        }
 
         CareportalFragment.updateAge(getActivity(), sage, iage, cage, pbage);
         BgReading actualBG = DatabaseHelper.actualBg();
@@ -1223,9 +1261,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
 
         // QuickWizard button
-        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null,"");
+        QuickWizardEntry quickWizardEntry = OverviewPlugin.getPlugin().quickWizard.getActive(null, "");
         if (quickWizardEntry != null && lastBG != null && pump.isInitialized() && !pump.isSuspended()) {
-    //        quickWizardButton.setVisibility(View.VISIBLE);
+            //        quickWizardButton.setVisibility(View.VISIBLE);
             String text = quickWizardEntry.buttonText() + "\n" + DecimalFormatter.to0Decimal(quickWizardEntry.carbs()) + "g";
             BolusWizard wizard = quickWizardEntry.doCalc(profile, profileName, lastBG, false);
             text += " " + DecimalFormatter.toPumpSupportedBolus(wizard.getCalculatedTotalInsulin()) + "U";
@@ -1437,15 +1475,15 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 int predHours = (int) (Math.ceil(apsResult.getLatestPredictionsTime() - System.currentTimeMillis()) / (60 * 60 * 1000));
                 predHours = Math.min(2, predHours);
                 predHours = Math.max(0, predHours);
-                if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
+                if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
                         SP.getBoolean(R.string.key_hypoppred_algorithm, false))
                     predHours = 2;
                 hoursToFetch = rangeToDisplay - predHours;
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
                 fromTime = toTime - T.hours(hoursToFetch).msecs();
                 endTime = toTime + T.hours(predHours).msecs();
-            } else if(HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
-                SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
+            } else if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
+                    SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {
                 int predHours = 2;
                 hoursToFetch = rangeToDisplay - predHours;
                 toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
@@ -1463,7 +1501,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             GraphDataProvider dataProvider = new GraphDataHelper();
 
-             //  ------------------ 1st graph
+            //  ------------------ 1st graph
             if (L.isEnabled(L.OVERVIEW))
                 Profiler.log(log, from + " - 1st graph - START", updateGUIStart);
 
@@ -1475,31 +1513,31 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             // **** BG ****
             if (finalPredictionsAvailable && SP.getBoolean("showprediction", false)) {
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine,
-                        apsResult.getPredictions(),dataProvider);
+                        apsResult.getPredictions(), dataProvider);
             } else
-                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null,dataProvider);
+                graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null, dataProvider);
 
             if (HypoPredictorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
-                    SP.getBoolean(R.string.key_hypoppred_algorithm, false)){// TODO: en verder: && SP.getBoolean("showprediction", false))
+                    SP.getBoolean(R.string.key_hypoppred_algorithm, false)) {// TODO: en verder: && SP.getBoolean("showprediction", false))
                 graphData.addBGCurve(fromTime, endTime, HypoPredictorPlugin.getPlugin().getFittedBGCurve(fromTime, endTime), lowLine, highLine);
             }
             // set manual x bounds to have nice steps
             graphData.formatAxis(fromTime, endTime);
 
-            if(SP.getBoolean("showactivityprimary", true)) {
-                graphData.addActivity(fromTime, endTime, false,1d,dataProvider);
+            if (SP.getBoolean("showactivityprimary", true)) {
+                graphData.addActivity(fromTime, endTime, false, 1d, dataProvider);
             }
 
             // Treatments
-            graphData.addTreatments(fromTime, endTime,dataProvider);
+            graphData.addTreatments(fromTime, endTime, dataProvider);
 
             // add basal data
             if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
-                graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d,dataProvider);
+                graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d, dataProvider);
             }
 
             // add target line
-            graphData.addTargetLine(fromTime, toTime, profile,dataProvider);
+            graphData.addTargetLine(fromTime, toTime, profile, dataProvider);
 
             // **** NOW line ****
             graphData.addNowLine(now);
@@ -1532,17 +1570,17 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
 
             if (SP.getBoolean("showiob", true))
-                secondGraphData.addIob(fromTime, now, useIobForScale, 1d,dataProvider);
+                secondGraphData.addIob(fromTime, now, useIobForScale, 1d, dataProvider);
             if (SP.getBoolean("showcob", true))
-                secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d,dataProvider);
+                secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d, dataProvider);
             if (SP.getBoolean("showdeviations", false))
-                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d,dataProvider);
+                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d, dataProvider);
             if (SP.getBoolean("showratios", false))
-                secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d,dataProvider);
-            if(SP.getBoolean("showactivitysecondary", true))
-                secondGraphData.addActivity(fromTime, endTime, useIAForScale,useIAForScale ? 2d: 1d,dataProvider);
+                secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d, dataProvider);
+            if (SP.getBoolean("showactivitysecondary", true))
+                secondGraphData.addActivity(fromTime, endTime, useIAForScale, useIAForScale ? 2d : 1d, dataProvider);
             if (SP.getBoolean("showdevslope", false) && MainApp.devBranch)
-                secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d,dataProvider);
+                secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d, dataProvider);
 
             // **** NOW line ****
             // set manual x bounds to have nice steps

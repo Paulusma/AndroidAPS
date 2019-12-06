@@ -129,21 +129,15 @@
                 android:textAppearance="@android:style/TextAppearance.Material.Small"
                 android:textStyle="bold" />
 
-            <info.nightscout.androidaps.utils.NumberPicker
-                android:id="@+id/treatments_wizard_carbtimeinput"
-                android:layout_width="130dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center_horizontal" />
-
-            <TextView
+            <CheckBox
+                android:id="@+id/treatments_wizard_carbtimecheckbox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:gravity="left"
-                android:minWidth="45dp"
-                android:paddingLeft="5dp"
-                android:text="min"
-                android:textAppearance="?android:attr/textAppearanceSmall" />
+                android:width="32dp"
+                android:checked="false"
+                android:layout_gravity="center_horizontal" />
+
+
         </LinearLayout>
 
 
@@ -297,7 +291,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:width="32dp"
-                android:checked="false" />
+                android:checked="true" />
 
             <TextView
                 android:layout_width="wrap_content"

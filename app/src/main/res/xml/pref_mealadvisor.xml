@@ -15,7 +15,7 @@
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/mealadvisor_startbg"
-            validate:floatminNumber="4.0"
+            validate:floatminNumber="4.1"
             validate:testType="floatNumericRange" />
 
         <com.andreabaccega.widget.ValidatingEditTextPreference

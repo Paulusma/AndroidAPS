@@ -21,6 +21,7 @@ import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions
 import info.nightscout.androidaps.plugins.general.overview.dialogs.ErrorHelperActivity
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin
 import info.nightscout.androidaps.queue.Callback
@@ -45,7 +46,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
                                             private val useTT: Boolean,
                                             private val useTrend: Boolean,
                                             val notes: String = "",
-                                            private val carbTime: Int = 0
+                                            private val carbNow: Boolean = false
 ) {
 
     private val log = LoggerFactory.getLogger(L.CORE)
@@ -252,6 +253,25 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
     }
 
     fun confirmAndExecute(context: Context) {
+        if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
+            val mealCarbs = MealAdvisorPlugin.getPlugin().getScheduledCarbs();
+            val mealNotes = MealAdvisorPlugin.getPlugin().getMealNotes();
+            if (!carbNow && carbs > 0.0 && mealCarbs > 0) {
+                // Already meal scheduled: overrule?
+                val builder = AlertDialog.Builder(context)
+                builder.setTitle("Inplannen maaltijd");
+                builder.setMessage("Er is al een maaltijd\n'"+mealNotes+"' ingepland,\ndeze zal overschreven worden.\n\nDoorgaan?");
+                builder.setPositiveButton("Ja") { dialog, id -> doConfirmAndExecute(context) }
+                builder.setNegativeButton("Nee", null)
+                builder.show()
+                return
+            }else
+                doConfirmAndExecute(context);
+        }else
+            doConfirmAndExecute(context);
+    }
+
+    fun doConfirmAndExecute(context: Context) {
         val profile = ProfileFunctions.getInstance().profile
         val pump = ConfigBuilderPlugin.getPlugin().activePump
 
@@ -314,7 +334,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
                         detailedBolusInfo.context = context
                         detailedBolusInfo.glucose = bg
                         detailedBolusInfo.glucoseType = "Manual"
-                        detailedBolusInfo.carbTime = carbTime
+                        detailedBolusInfo.carbTime = if(carbNow)0 else 5;
                         detailedBolusInfo.boluscalc = nsJSON()
                         detailedBolusInfo.source = Source.USER
                         detailedBolusInfo.notes = notes

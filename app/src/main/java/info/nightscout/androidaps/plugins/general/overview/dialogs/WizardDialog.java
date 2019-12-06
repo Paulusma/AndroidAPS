@@ -88,7 +88,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     NumberPicker editBg;
     NumberPicker editCarbs;
     NumberPicker editCorr;
-    NumberPicker editCarbTime;
+    CheckBox ctCheckBox;
 
     LinearLayout notesLayout;
     EditText notesEdit;
@@ -151,7 +151,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         savedInstanceState.putDouble("editBg", editBg.getValue());
         savedInstanceState.putDouble("editCarbs", editCarbs.getValue());
         savedInstanceState.putDouble("editCorr", editCorr.getValue());
-        savedInstanceState.putDouble("editCarbTime", editCarbTime.getValue());
+        savedInstanceState.putBoolean("ctCheckBox", ctCheckBox.isChecked());
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -237,10 +237,12 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         profileSpinner = (Spinner) view.findViewById(R.id.treatments_wizard_profile);
         profileSpinner.setOnItemSelectedListener(this);
 
-        editCarbTime = (NumberPicker) view.findViewById(R.id.treatments_wizard_carbtimeinput);
+        ctCheckBox = (CheckBox) view.findViewById(R.id.treatments_wizard_carbtimecheckbox);
         editCorr = (NumberPicker) view.findViewById(R.id.treatments_wizard_correctioninput);
         editCarbs = (NumberPicker) view.findViewById(R.id.treatments_wizard_carbsinput);
         editBg = (NumberPicker) view.findViewById(R.id.treatments_wizard_bginput);
+
+        ctCheckBox.setOnCheckedChangeListener(this);
 
         superbolusCheckbox.setVisibility(SP.getBoolean(R.string.key_usesuperbolus, false) ? View.VISIBLE : View.GONE);
 
@@ -266,7 +268,6 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         editCarbs.setParams(mealCarbs, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
         double bolusstep = ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep;
         editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
-        editCarbTime.setParams(0d, -60d, 60d, 5d, new DecimalFormat("0"), false, textWatcher);
         notesEdit.setText(meal);
         initDialog();
 
@@ -276,7 +277,6 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         if (savedInstanceState != null) {
             editCarbs.setValue(savedInstanceState.getDouble("editCarbs"));
             editBg.setValue(savedInstanceState.getDouble("editBg"));
-            editCarbTime.setValue(savedInstanceState.getDouble("editCarbTime"));
             editCorr.setValue(savedInstanceState.getDouble("editCorr"));
         }
         return view;
@@ -417,7 +417,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
                 c_cob = cobInfo.displayCob;
         }
 
-        wizard = new BolusWizard(specificProfile, profileName, tempTarget, carbsAfterConstraint, c_cob, c_bg, corrAfterConstraint, 100d, bgCheckbox.isChecked(), cobCheckbox.isChecked(), bolusIobCheckbox.isChecked(), basalIobCheckbox.isChecked(), superbolusCheckbox.isChecked(), ttCheckbox.isChecked(), bgtrendCheckbox.isChecked(), notesEdit.getText().toString(), SafeParse.stringToInt(editCarbTime.getText()));
+        wizard = new BolusWizard(specificProfile, profileName, tempTarget, carbsAfterConstraint, c_cob, c_bg, corrAfterConstraint, 100d, bgCheckbox.isChecked(), cobCheckbox.isChecked(), bolusIobCheckbox.isChecked(), basalIobCheckbox.isChecked(), superbolusCheckbox.isChecked(), ttCheckbox.isChecked(), bgtrendCheckbox.isChecked(), notesEdit.getText().toString(), ctCheckBox.isChecked());
 
         bg.setText(c_bg + " ISF: " + DecimalFormatter.to1Decimal(wizard.getSens()));
         bgInsulin.setText(StringUtils.formatInsulin(wizard.getInsulinFromBG()));

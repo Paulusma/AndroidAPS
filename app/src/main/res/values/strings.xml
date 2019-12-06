@@ -217,7 +217,7 @@
     <string name="careportal_newnstreatment_sensor">Sensor</string>
     <string name="careportal_newnstreatment_carbs_label">Carbs</string>
     <string name="careportal_newnstreatment_insulin_label">Insulin</string>
-    <string name="careportal_newnstreatment_carbtime_label">Carb time</string>
+    <string name="careportal_newnstreatment_carbtime_label">Start eating NOW</string>
     <string name="careportal_newnstreatment_split_label">Split</string>
     <string name="careportal_newnstreatment_duration_label">Duration</string>
     <string name="careportal_newnstreatment_percent_label">Percent</string>
