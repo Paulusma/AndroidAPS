@@ -23,10 +23,12 @@ import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
+import info.nightscout.androidaps.plugins.treatments.CarbsGenerator;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -302,7 +304,8 @@ public class MealAdvisorPlugin extends PluginBase {
         detailedBolusInfo.source = Source.USER;
         detailedBolusInfo.isValid = true;
 
-        TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo, false);
+        CarbsGenerator.generateCarbs((int)mealCarbs(), now(), 0, mealNotes());
+        NSUpload.uploadEvent(CareportalEvent.NOTE, now(), MainApp.gs(R.string.generated_ecarbs_note, mealCarbs(), 0, 0));
 
         Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
         alarm.putExtra("soundid", resourceID);
