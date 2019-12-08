@@ -17,11 +17,11 @@ import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.events.EventRefreshOverview;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.aps.openAPSMA.events.EventOpenAPSUpdateGui;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
@@ -284,7 +284,7 @@ public class MealAdvisorPlugin extends PluginBase {
         setRescheduledMealTime(true);
 
         setMealDate(date);
-        MainApp.bus().post(new EventOpenAPSUpdateGui());
+        MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
     }
 
     public synchronized boolean startMeal(int resourceID) {
@@ -311,7 +311,7 @@ public class MealAdvisorPlugin extends PluginBase {
         setMealBolusDate(0L);
 
         resetState();
-        MainApp.bus().post(new EventOpenAPSUpdateGui());
+        MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
 
         return true;
     }
@@ -378,6 +378,6 @@ public class MealAdvisorPlugin extends PluginBase {
                 .low(Profile.toMgdl(4.0, mCurrentProfile.getUnits()))
                 .high(Profile.toMgdl(4.0, mCurrentProfile.getUnits()));
         TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
-        MainApp.bus().post(new EventOpenAPSUpdateGui());
+        MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
     }
 }
