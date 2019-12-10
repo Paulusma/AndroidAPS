@@ -28,7 +28,7 @@ import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
-import info.nightscout.androidaps.plugins.treatments.CarbsGenerator;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -273,6 +273,8 @@ public class MealAdvisorPlugin extends PluginBase {
                 .low(0)
                 .high(0);
         TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
+
+        MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
     }
 
     private void rescheduleMealTime() {
@@ -293,19 +295,21 @@ public class MealAdvisorPlugin extends PluginBase {
         if (mLastStatus == null || mIobTotal == null || mCobInfo == null) return false;
 
         DetailedBolusInfo detailedBolusInfo = new DetailedBolusInfo();
-        detailedBolusInfo.date = now();
-        detailedBolusInfo.carbTime = 0;
-        detailedBolusInfo.eventType = CareportalEvent.BOLUSWIZARD;
+        detailedBolusInfo.eventType = CareportalEvent.CARBCORRECTION;
         detailedBolusInfo.insulin = 0.0;
         detailedBolusInfo.carbs = mealCarbs();
-        detailedBolusInfo.context = null;
-        detailedBolusInfo.glucose = mLastStatus.glucose;
-        detailedBolusInfo.glucoseType = "Manual";
+        detailedBolusInfo.context = MainApp.instance().getApplicationContext();
         detailedBolusInfo.source = Source.USER;
-        detailedBolusInfo.isValid = true;
+        detailedBolusInfo.date = now();
+        detailedBolusInfo.isSMB = false;
+        detailedBolusInfo.notes = mealNotes();
 
-        CarbsGenerator.generateCarbs((int)mealCarbs(), now(), 0, mealNotes());
-        NSUpload.uploadEvent(CareportalEvent.NOTE, now(), MainApp.gs(R.string.generated_ecarbs_note, mealCarbs(), 0, 0));
+        Treatment carbsTreatment = new Treatment();
+        carbsTreatment.source = Source.USER;
+        carbsTreatment.carbs = mealCarbs();
+        carbsTreatment.date = now();
+        TreatmentsPlugin.getPlugin().getService().createOrUpdate(carbsTreatment);
+        NSUpload.uploadTreatmentRecord(detailedBolusInfo);
 
         Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
         alarm.putExtra("soundid", resourceID);
@@ -314,7 +318,6 @@ public class MealAdvisorPlugin extends PluginBase {
         setMealBolusDate(0L);
 
         resetState();
-        MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
 
         return true;
     }

@@ -277,11 +277,13 @@ public class HypoPredictorPlugin extends PluginBase {
                         , mCurrentProfile.getUnits());
                 int duration = 180; // TT will be cancelled when precondition no longer satisfied
 
-                if (mCurrentTarget == null || mCurrentTarget.low < lowTTTargetLevel) {
+                if (mCurrentTarget == null || (
+                        mCurrentTarget.low < lowTTTargetLevel
+                        && !mCurrentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon)))) {
                     log.info("LOW TT replaces current TT");
                     startLowTT(lowTTTargetLevel, duration, low);
                 } else if (log.isInfoEnabled()) {
-                    log.info("Current TT has higher target");
+                    log.info("Current TT has higher target or is 'eating soon'");
                 }
             }
 
