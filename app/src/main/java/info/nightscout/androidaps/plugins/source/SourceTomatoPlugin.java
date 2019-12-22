@@ -21,7 +21,7 @@ import info.nightscout.androidaps.utils.SP;
  * Created by mike on 05.08.2016.
  */
 public class SourceTomatoPlugin extends PluginBase implements BgSourceInterface {
-    private static Logger log = LoggerFactory.getLogger(L.BGSOURCE);
+    private static Logger log = LoggerFactory.getLogger(L.NSCLIENT);
 
     private static SourceTomatoPlugin plugin = null;
 
@@ -65,6 +65,7 @@ public class SourceTomatoPlugin extends PluginBase implements BgSourceInterface 
         boolean isNew = MainApp.getDbHelper().createIfNotExists(bgReading, "Tomato");
         if (isNew && SP.getBoolean(R.string.key_dexcomg5_nsupload, false)) {
             NSUpload.uploadBg(bgReading, "AndroidAPS-Tomato");
+            log.info("NSUpload commencing...");
         }
         if (isNew && SP.getBoolean(R.string.key_dexcomg5_xdripupload, false)) {
             NSUpload.sendToXdrip(bgReading);

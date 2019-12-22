@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.interfaces.BgSourceInterface;
@@ -16,6 +17,7 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.BundleLogger;
+import info.nightscout.androidaps.utils.SP;
 
 /**
  * Created by mike on 05.08.2016.
@@ -66,7 +68,11 @@ public class SourceXdripPlugin extends PluginBase implements BgSourceInterface {
         bgReading.raw = bundle.getDouble(Intents.EXTRA_RAW);
         String source = bundle.getString(Intents.XDRIP_DATA_SOURCE_DESCRIPTION, "no Source specified");
         SourceXdripPlugin.getPlugin().setSource(source);
-        MainApp.getDbHelper().createIfNotExists(bgReading, "XDRIP");
+        boolean isNew = MainApp.getDbHelper().createIfNotExists(bgReading, "XDRIP");
+        if (isNew && SP.getBoolean(R.string.key_dexcomg5_nsupload, false)) {
+            NSUpload.uploadBg(bgReading, "AndroidAPS-Tomato");
+            log.info("NSUpload commencing...");
+        }
     }
 
     public void setSource(String source) {

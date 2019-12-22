@@ -1,7 +1,5 @@
 package info.nightscout.androidaps.plugins.hm.hypopredictor;
 
-import android.content.Intent;
-
 import com.squareup.otto.Subscribe;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -41,13 +39,13 @@ import info.nightscout.androidaps.plugins.general.overview.notifications.Notific
 import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.BGCurveFitter;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.ExponentialBGCurveFitter;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.algorithm.LinearBGCurveFitter;
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.CobInfo;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
-import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
 
@@ -316,6 +314,10 @@ public class HypoPredictorPlugin extends PluginBase {
         }
 
         // No LOW prevention if there are carbs scheduled within the next hour
+        if(MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0){
+            log.info("Skip LOW detection - meal scheduled");
+            return null;
+        }
         List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
         for (Treatment treatment : treatments) {
             if (treatment.isValid
@@ -629,11 +631,13 @@ public class HypoPredictorPlugin extends PluginBase {
             long hypoStart = SP.getLong("hypoStart", now());
             MealData mealData = TreatmentsPlugin.getPlugin().getMealData();
             if(now() < hypoStart && mLastStatus.glucose > 3*18 && Math.ceil(mealData.mealCOB - 0.25*mealData.carbs)>5){
-                // If enough meal carbs remain issue a warning instead of alert
+ /* disabled since we now have mealadvisor
+               // If enough meal carbs remain issue a warning instead of alert
                 Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
                 alarm.putExtra("soundid", R.raw.didyoueat);
                 MainApp.instance().startService(alarm);
-                log.info("Hypo but COB: warning issued (did you eat)?");
+   */
+                log.info("Hypo but enough COB");
                 SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
                 return;
             }

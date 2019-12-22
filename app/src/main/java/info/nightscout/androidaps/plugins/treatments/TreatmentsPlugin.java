@@ -523,8 +523,9 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
         boolean newRecordCreated = creatOrUpdateResult.newRecord;
         //log.debug("Adding new Treatment record" + treatment.toString());
         if (detailedBolusInfo.carbTime != 0) {
-            if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) &&
-                    detailedBolusInfo.eventType == CareportalEvent.BOLUSWIZARD) {
+            if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)
+                    && detailedBolusInfo.eventType == CareportalEvent.BOLUSWIZARD
+                    && detailedBolusInfo.insulin > 0.0) {
                 MealAdvisorPlugin.getPlugin().registerMeal((int) detailedBolusInfo.carbs, detailedBolusInfo.notes);
                 detailedBolusInfo.carbTime = 0;
                 detailedBolusInfo.carbs = 0.0;

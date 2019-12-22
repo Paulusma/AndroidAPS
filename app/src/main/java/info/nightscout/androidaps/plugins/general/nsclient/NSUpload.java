@@ -24,9 +24,6 @@ import java.util.Locale;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
@@ -35,11 +32,14 @@ import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.androidaps.db.ProfileSwitch;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.db.TemporaryBasal;
-import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.APSResult;
 import info.nightscout.androidaps.plugins.aps.loop.DeviceStatus;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
+import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.nsclient.data.DbLogger;
+import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.utils.BatteryLevel;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
@@ -477,13 +477,16 @@ public class NSUpload {
         bundle.putString("collection", "entries");
         JSONObject data = new JSONObject();
         try {
+            log.info("Uploading");
             data.put("device", source);
             data.put("date", reading.date);
             data.put("dateString", DateUtil.toISOString(reading.date));
             data.put("sgv", reading.value);
             data.put("direction", reading.direction);
             data.put("type", "sgv");
-        } catch (JSONException e) {
+            data.put("filtered",  reading.value * 1000);
+ //           data.put("unfiltered", 18*3*1000 + StateDataPlugin.getPlugin().mState.activity * 20*6 * 18 * 1000); // misuse raw BG for IA... IA=0.05 <=> 'raw BG' = 20
+         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
         bundle.putString("data", data.toString());

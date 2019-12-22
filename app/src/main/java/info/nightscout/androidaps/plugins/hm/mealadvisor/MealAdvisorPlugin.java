@@ -187,20 +187,7 @@ public class MealAdvisorPlugin extends PluginBase {
         }
     }
 /*
-    Boluswizard:
-    - v vervang tijd door radio's NU en LATER. NU werkt zoals eerder, LATER via mealadvisor
-    - v maak treatment pas aan als maaltijd start
-    - v zet actuele estimate waarop kan worden begonnen met eten onder Boluswizard icoon
-    - v longpress op boluswizard icoon opent dialoog met afbreken/starten maaltijd
-
-    Controle:
-    - v na 1 uur volgt melding dat opnieuw moet worden geblust cq maaltijd opnieuw wordt ingevoerd
-    - v wachttijd afhankelijk van BG, trend en moment van bolus: loopt 30 min naar 0
-    - v check <4 wordt <4.5 en dalend
-    - v waarschuwen als er al een maaltijd is ingepland
-
-    Robuustheid:
-    -   sla state realtime op in preferences: bolustijd, #carbs, notitie!!!!!!!!!!!!!
+TODO: pre-bolus en bolus bij start
   */
 
     private synchronized void executeCheck() {
@@ -266,15 +253,19 @@ public class MealAdvisorPlugin extends PluginBase {
         setMealBolusDate(0L);
 
         // Cancel eating soon TT
-        TempTarget tempTarget = new TempTarget()
-                .source(Source.USER)
-                .date(now())
-                .duration(0)
-                .low(0)
-                .high(0);
-        TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
+        TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
+        if(currentTarget!= null && currentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon)) ) {
+            TempTarget tempTarget = new TempTarget()
+                    .source(Source.USER)
+                    .date(now())
+                    .duration(0)
+                    .low(0)
+                    .high(0);
+            TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
+        }
 
         MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
+        log.info("State reset");
     }
 
     private void rescheduleMealTime() {
@@ -317,6 +308,7 @@ public class MealAdvisorPlugin extends PluginBase {
 
         setMealBolusDate(0L);
 
+        log.info("Meal started.");
         resetState();
 
         return true;

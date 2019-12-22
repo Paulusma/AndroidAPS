@@ -7,7 +7,6 @@ import info.nightscout.androidaps.utils.SP;
 
 public class L {
 
-
     public static class LogElement {
         public String name;
         boolean defaultValue;
@@ -102,6 +101,8 @@ public class L {
     public static final String DROPTARGET = "DROPTARGET";
     public static final String HGDPROV = "HGDPROV";
     public static final String MEALADVISOR = "MEALADVISOR";
+    public static final String HMTASK = "HMTASK";
+
 
     private static void initialize() {
         logElements = new ArrayList<>();
@@ -129,8 +130,9 @@ public class L {
         logElements.add(new LogElement(UI, true));
         logElements.add(new LogElement(HYPOPRED, true));
         logElements.add(new LogElement(DROPTARGET, true));
-        logElements.add(new LogElement(HGDPROV, false));
-        logElements.add(new LogElement(MEALADVISOR, false));
+        logElements.add(new LogElement(HGDPROV, true));
+        logElements.add(new LogElement(MEALADVISOR, true));
+        logElements.add(new LogElement(HMTASK, true));
     }
 
 }

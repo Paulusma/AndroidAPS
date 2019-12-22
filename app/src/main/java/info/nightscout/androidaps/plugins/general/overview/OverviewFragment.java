@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -97,6 +98,7 @@ import info.nightscout.androidaps.plugins.general.overview.dialogs.NewTreatmentD
 import info.nightscout.androidaps.plugins.general.overview.dialogs.WizardDialog;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
 import info.nightscout.androidaps.plugins.general.wear.ActionStringHandler;
+import info.nightscout.androidaps.plugins.hm.SensorAgeTask;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
 import info.nightscout.androidaps.plugins.hm.stateviewer.GraphDataHelper;
@@ -138,6 +140,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView deltaView;
     TextView deltaShortView;
     TextView avgdeltaView;
+    TextView sensorAgeView;
     TextView baseBasalView;
     TextView extendedBolusView;
     TextView activeProfileView;
@@ -241,6 +244,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         deltaView = (TextView) view.findViewById(R.id.overview_delta);
         deltaShortView = (TextView) view.findViewById(R.id.overview_deltashort);
         avgdeltaView = (TextView) view.findViewById(R.id.overview_avgdelta);
+        sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
@@ -807,7 +811,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                         String mealNotes = MealAdvisorPlugin.getPlugin().getMealNotes();
                         String mealStart = MealAdvisorPlugin.getPlugin().getMealTime();
                         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                        builder.setTitle(mealStart+": "+mealNotes);
+                        builder.setTitle(mealStart + ": " + mealNotes);
                         builder.setMessage("Ingeplande maaltijd starten\nof verwijderen?\n\n(of druk op 'Afbreken'\n om dit scherm te sluiten)");
                         builder.setPositiveButton("Start", (dialog, id) -> {
                             if (MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal)) {
@@ -1101,6 +1105,18 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     deltaShortView.setText("---");
                 if (avgdeltaView != null)
                     avgdeltaView.setText("");
+            }
+        }
+
+        if (sensorAgeView != null) {
+            //!!! Call xDrip REST service to display sensor age. Warn when >13d old.
+            try {
+                log.info("PMA exec sensorAgeTask");
+                AsyncTask.execute(new SensorAgeTask(getActivity(),sensorAgeView));
+                log.info("PMA exec sensorAgeTask done");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.info("Exception calling xDrip REST: " + e.getMessage());
             }
         }
 

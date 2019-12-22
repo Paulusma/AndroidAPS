@@ -284,6 +284,7 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
 
 
     static long lastEventLoopUpdateGui = 0L;
+    public static StateData mState = new StateData();
     private synchronized void updateHistoricGraphData(BgReading bgr) {
         long time = now();
         double bg;
@@ -300,9 +301,7 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
             log.info("Timer fired");
         }
 
-        StateData state = new StateData();
-
-        try {
+         try {
             Profile profile = ProfileFunctions.getInstance().getProfile(time);
             if (profile == null) {
                 log.info("Exit: profile NULL!");
@@ -316,27 +315,27 @@ public class StateDataPlugin extends PluginBase implements GraphDataProvider {
             BasalData basalData = IobCobCalculatorPlugin.getPlugin().getBasalData(profile, time);
             TempTarget target = TreatmentsPlugin.getPlugin().getTempTargetFromHistory(time);
 
-            state.date = time;
-            state.bg = bg;
-            state.activity = (bolusIob != null) ? bolusIob.activity + basalIob.activity : 0;
-            state.basal = (basalData != null) ? basalData.basal : 0;
-            state.isTempBasalRunning = (basalData != null)? basalData.isTempBasalRunning : false;
-            state.tempBasalAbsolute = (basalData != null) ? basalData.tempBasalAbsolute : 0;
-            state.iob = (bolusIob != null) ? bolusIob.iob + basalIob.basaliob : 0;
-            state.cob = (autosensData != null) ? autosensData.cob : 0.0;
-            state.carbsFromBolus = (autosensData != null) ? autosensData.carbsFromBolus : 0.0;
-            state.failoverToMinAbsorbtionRate = (autosensData != null) ? autosensData.failoverToMinAbsorbtionRate : false;
-            state.deviation = (autosensData != null) ? autosensData.deviation : 0.0;
-            state.pastSensitivity = (autosensData != null) ? autosensData.pastSensitivity : "";
-            state.type = (autosensData != null) ? autosensData.type : "";
-            state.sens = (autosensData != null) ? autosensData.autosensResult.ratio : 0.0;
-            state.slopeMin = (autosensData != null) ? autosensData.slopeFromMinDeviation : 0.0;
-            state.slopeMax = (autosensData != null) ? autosensData.slopeFromMaxDeviation : 0.0;
-            state.target = (target != null) ? (target.low + target.high) / 2 :
+            mState.date = time;
+            mState.bg = bg;
+            mState.activity = (bolusIob != null) ? bolusIob.activity + basalIob.activity : 0;
+            mState.basal = (basalData != null) ? basalData.basal : 0;
+            mState.isTempBasalRunning = (basalData != null)? basalData.isTempBasalRunning : false;
+            mState.tempBasalAbsolute = (basalData != null) ? basalData.tempBasalAbsolute : 0;
+            mState.iob = (bolusIob != null) ? bolusIob.iob + basalIob.basaliob : 0;
+            mState.cob = (autosensData != null) ? autosensData.cob : 0.0;
+            mState.carbsFromBolus = (autosensData != null) ? autosensData.carbsFromBolus : 0.0;
+            mState.failoverToMinAbsorbtionRate = (autosensData != null) ? autosensData.failoverToMinAbsorbtionRate : false;
+            mState.deviation = (autosensData != null) ? autosensData.deviation : 0.0;
+            mState.pastSensitivity = (autosensData != null) ? autosensData.pastSensitivity : "";
+            mState.type = (autosensData != null) ? autosensData.type : "";
+            mState.sens = (autosensData != null) ? autosensData.autosensResult.ratio : 0.0;
+            mState.slopeMin = (autosensData != null) ? autosensData.slopeFromMinDeviation : 0.0;
+            mState.slopeMax = (autosensData != null) ? autosensData.slopeFromMaxDeviation : 0.0;
+            mState.target = (target != null) ? (target.low + target.high) / 2 :
                     Profile.toMgdl((profile.getTargetLow(now()) + profile.getTargetHigh(now())) / 2, profile.getUnits());
 
-            log.info("Saving: " + state);
-            dbHelper.createOrUpdateStateData(state);
+            log.info("Saving: " + mState);
+            dbHelper.createOrUpdateStateData(mState);
         } catch (Exception e) {
             log.info(e.getMessage());
             log.error("Unhandled exception", e);

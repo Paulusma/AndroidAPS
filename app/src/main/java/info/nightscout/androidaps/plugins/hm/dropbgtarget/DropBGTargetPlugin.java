@@ -185,7 +185,14 @@ public class DropBGTargetPlugin extends PluginBase {
             return false;
         }
 
-        double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
+        // Do not drop when hypo- or eating soon TT running
+        TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
+        if(currentTarget!= null &&
+                (currentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon))
+                || currentTarget.reason.startsWith(MainApp.gs(R.string.hypo_detection))))
+            return false;
+
+            double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
         if ((mLastStatus.short_avgdelta < 5 && mLastStatus.short_avgdelta > -5)
                 && (mLastStatus.long_avgdelta < 5 && mLastStatus.long_avgdelta > -5)
                 && (mLastStatus.delta < 5 && mLastStatus.delta > -5)
