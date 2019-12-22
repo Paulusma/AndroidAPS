@@ -1,3 +1,14 @@
 # AndroidAPS
 
-Tailored to my wife's configuration & needs. Currently forked from 2.3 with some additions.
+Backup of my local project tailored to my wife's configuration & needs. Based on 2.3 with some additions:
+
+- low BG prevention and hypo predictor plugin 
+- plugin that drops BG target on stable BG
+- auto pre-bolus/eating soon/start eating messsage
+- fast history browser plugin stateviewer
+- warns when libre sensor is past 13 days (depends on xDrip mod)
+- NS upload of BG reading so xDrip can be local (depends on xDrip mod)
+- black background on overview
+- some minor changes
+
+If you're interested start browsing at /plugins/hm.
