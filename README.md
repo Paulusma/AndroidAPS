@@ -4,7 +4,8 @@ Backup of my local project tailored to my wife's configuration & needs. Based on
 
 - low BG prevention and hypo predictor plugin 
 - plugin that drops BG target on stable BG
-- auto pre-bolus/eating soon/start eating messsage
+- wizard using predefined meals
+- auto pre-bolus/eating soon after selecting meal & message when to start eating
 - fast history browser plugin stateviewer
 - warns when libre sensor is past 13 days (depends on xDrip mod)
 - NS upload of BG reading so xDrip can be local (depends on xDrip mod)
