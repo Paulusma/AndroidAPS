@@ -68,6 +68,7 @@ public class SourceXdripPlugin extends PluginBase implements BgSourceInterface {
         bgReading.raw = bundle.getDouble(Intents.EXTRA_RAW);
         String source = bundle.getString(Intents.XDRIP_DATA_SOURCE_DESCRIPTION, "no Source specified");
         SourceXdripPlugin.getPlugin().setSource(source);
+//        MainApp.getDbHelper().createIfNotExists(bgReading, "XDRIP");
         boolean isNew = MainApp.getDbHelper().createIfNotExists(bgReading, "XDRIP");
         if (isNew && SP.getBoolean(R.string.key_dexcomg5_nsupload, false)) {
             NSUpload.uploadBg(bgReading, "AndroidAPS-Tomato");

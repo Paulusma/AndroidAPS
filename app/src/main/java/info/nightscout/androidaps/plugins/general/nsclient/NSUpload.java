@@ -477,7 +477,6 @@ public class NSUpload {
         bundle.putString("collection", "entries");
         JSONObject data = new JSONObject();
         try {
-            log.info("Uploading");
             data.put("device", source);
             data.put("date", reading.date);
             data.put("dateString", DateUtil.toISOString(reading.date));
@@ -485,32 +484,7 @@ public class NSUpload {
             data.put("direction", reading.direction);
             data.put("type", "sgv");
             data.put("filtered",  reading.value * 1000);
- //           data.put("unfiltered", 18*3*1000 + StateDataPlugin.getPlugin().mState.activity * 20*6 * 18 * 1000); // misuse raw BG for IA... IA=0.05 <=> 'raw BG' = 20
          } catch (JSONException e) {
-            log.error("Unhandled exception", e);
-        }
-        bundle.putString("data", data.toString());
-        Intent intent = new Intent(Intents.ACTION_DATABASE);
-        intent.putExtras(bundle);
-        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-        DbLogger.dbAdd(intent, data.toString());
-    }
-
-    public static void uploadActivityAtBg(BgReading reading, String source) {
-        Context context = MainApp.instance().getApplicationContext();
-        Bundle bundle = new Bundle();
-        bundle.putString("action", "dbAdd");
-        bundle.putString("collection", "entries");
-        JSONObject data = new JSONObject();
-        try {
-            data.put("device", source);
-            data.put("date", reading.date);
-            data.put("dateString", DateUtil.toISOString(reading.date));
-            data.put("sgv", reading.value);
-            data.put("direction", reading.direction);
-            data.put("type", "sgv");
-        } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
         bundle.putString("data", data.toString());
