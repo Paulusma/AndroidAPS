@@ -1,6 +1,6 @@
 # AndroidAPS
 
-Backup of my local project tailored to my wife's configuration & needs. Based on 2.3 with some additions:
+Backup of my local project tailored to my wife's configuration & needs. In branch AutoSetHypoTT. Based on 2.3 with some additions:
 
 - low BG prevention and hypo predictor plugin 
 - plugin that drops BG target on stable BG
