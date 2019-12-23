@@ -134,7 +134,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="10dp"
                         android:layout_weight="0.5"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/overview_delta"
@@ -142,7 +142,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="10dp"
                         android:layout_weight="0.5"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/overview_avgdelta"

@@ -245,6 +245,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         deltaShortView = (TextView) view.findViewById(R.id.overview_deltashort);
         avgdeltaView = (TextView) view.findViewById(R.id.overview_avgdelta);
         sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
+        sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
@@ -1410,7 +1411,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
                 if (reservoirView != null) {
                     double reservoirLevel = pump.isInitialized() ? pump.getReservoirLevel() : -1;
-                    applyStatuslight(reservoirView, "RES", reservoirLevel, resWarn, resUrgent, -1, false);
+                    applyStatuslight(reservoirView, "RES: "+reservoirLevel, reservoirLevel, resWarn, resUrgent, -1, false);
                 }
 
                 if (sageView != null) {
