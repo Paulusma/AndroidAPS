@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
@@ -139,7 +140,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView timeAgoShortView;
     TextView deltaView;
     TextView deltaShortView;
-    TextView avgdeltaView;
+    TextView insulinLeftView;
     TextView sensorAgeView;
     TextView baseBasalView;
     TextView extendedBolusView;
@@ -243,8 +244,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         timeAgoShortView = (TextView) view.findViewById(R.id.overview_timeagoshort);
         deltaView = (TextView) view.findViewById(R.id.overview_delta);
         deltaShortView = (TextView) view.findViewById(R.id.overview_deltashort);
-        avgdeltaView = (TextView) view.findViewById(R.id.overview_avgdelta);
         sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
+        insulinLeftView = (TextView) view.findViewById(R.id.overview_insulinleft);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
@@ -1095,28 +1096,34 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     deltaView.setText("Δ " + Profile.toUnitsString(glucoseStatus.delta, glucoseStatus.delta * Constants.MGDL_TO_MMOLL, units) + " " + units);
                 if (deltaShortView != null)
                     deltaShortView.setText(Profile.toSignedUnitsString(glucoseStatus.delta, glucoseStatus.delta * Constants.MGDL_TO_MMOLL, units));
-                if (avgdeltaView != null)
-                    avgdeltaView.setText("øΔ15m: " + Profile.toUnitsString(glucoseStatus.short_avgdelta, glucoseStatus.short_avgdelta * Constants.MGDL_TO_MMOLL, units) +
-                            "  øΔ40m: " + Profile.toUnitsString(glucoseStatus.long_avgdelta, glucoseStatus.long_avgdelta * Constants.MGDL_TO_MMOLL, units));
             } else {
                 if (deltaView != null)
                     deltaView.setText("Δ " + MainApp.gs(R.string.notavailable));
                 if (deltaShortView != null)
                     deltaShortView.setText("---");
-                if (avgdeltaView != null)
-                    avgdeltaView.setText("");
             }
         }
 
         if (sensorAgeView != null) {
             //!!! Call xDrip REST service to display sensor age. Warn when >13d old.
             try {
-                log.info("PMA exec sensorAgeTask");
                 AsyncTask.execute(new SensorAgeTask(getActivity(),sensorAgeView));
-                log.info("PMA exec sensorAgeTask done");
             } catch (Exception e) {
                 e.printStackTrace();
-                log.info("Exception calling xDrip REST: " + e.getMessage());
+                log.info(e.getMessage());
+            }
+        }
+
+        if(insulinLeftView!=null){
+            //!!! display insulin left, warn when low
+            double reservoirLevel = pump.isInitialized() ? pump.getReservoirLevel() : -1;
+            insulinLeftView.setText("Insulin left: "+reservoirLevel+"U");
+            if(reservoirLevel <= 10){
+                insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationUrgent));
+            }else if(reservoirLevel <= 25) {
+                insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationAnnouncement));
+            }else{
+                insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
             }
         }
 

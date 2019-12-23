@@ -34,6 +34,7 @@ public class SensorAgeTask implements Runnable {
     private Activity act;
     private TextView sensorAgeView;
     private static long lastCalled = 0;
+    private static String lastSensorAge = "";
 
     public SensorAgeTask(Activity _act, TextView _tv) {
         act = _act;
@@ -42,57 +43,63 @@ public class SensorAgeTask implements Runnable {
 
     @Override
     public void run() {
-        // update age only once every half hour
-        if ( DateUtil.now() - lastCalled < 1000 * 60 * 30) return;
-
         HttpURLConnection myConnection = null;
+        String currentSensorAge;
         try {
-            URL xDripCall = new URL("http://127.0.0.1:17580/sgv.json?sensor=Y");
-            myConnection = (HttpURLConnection) xDripCall.openConnection();
-            if (myConnection.getResponseCode() == 200) {
-                InputStream responseBody = myConnection.getInputStream();
-                InputStreamReader responseBodyReader = new InputStreamReader(responseBody, "UTF-8");
-                JsonArray bgReadings = new JsonParser().parse(responseBodyReader).getAsJsonArray();
-                JsonObject obj = bgReadings.get(0).getAsJsonObject();
-                String sensorAge = obj.get("sensor_status").getAsString();
+            // update age only once every half hour
+            if (DateUtil.now() - lastCalled > 1000 * 60 * 30) {
+                URL xDripCall = new URL("http://127.0.0.1:17580/sgv.json?sensor=Y");
+                myConnection = (HttpURLConnection) xDripCall.openConnection();
+                if (myConnection.getResponseCode() == 200) {
+                    InputStream responseBody = myConnection.getInputStream();
+                    InputStreamReader responseBodyReader = new InputStreamReader(responseBody, "UTF-8");
+                    JsonArray bgReadings = new JsonParser().parse(responseBodyReader).getAsJsonArray();
+                    JsonObject obj = bgReadings.get(0).getAsJsonObject();
+                    currentSensorAge = obj.get("sensor_status").getAsString();
+                } else {
+                    log.info("Error calling xDrip REST: " + myConnection.getResponseCode() + myConnection.getResponseMessage());
+                    myConnection.disconnect();
+                    return;
+                }
+            } else
+                currentSensorAge = lastSensorAge;
 
-                act.runOnUiThread(new Runnable() { // UI operations must run on this thread
-                    @Override
-                    public void run() {
-                        try {
-                            sensorAgeView.setText("Sensor Age: ??.?");
-                            double sAge = 0.0d;
-                            sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
-                            sensorAgeView.setText("Sensor " + sensorAge);
-                            int time = Profile.secondsFromMidnight() / 60;
-                            if (sAge >= 13.0 &&
-                                    !SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
-                                    time > 10 * 60 && time < 23 * 60) {
-                                // Over time, not yet warned and during waking hours: warn "place new sensor"
-                                SP.putBoolean("sensor_replace_warned", Boolean.TRUE);
-                                Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
-                                alarm.putExtra("soundid", R.raw.prewarn_new_sensor);
-                                MainApp.instance().startService(alarm);
-                                sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.warning));
-                                log.info("xDrip sensor age updated, prewarned");
-                            } else if (sAge < 13.0) {
-                                SP.putBoolean("sensor_replace_warned", Boolean.FALSE);
-                                sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
-                                log.info("Sensor prewarn reset");
-                            }
-                            SP.putDouble("last_sensor_age", sAge);
-                            lastCalled = DateUtil.now();
-                        } catch (Exception e) {
-                            log.info(""+e);
-                            e.printStackTrace();
-                            log.info(e.getMessage());
+
+            final String sensorAge = currentSensorAge;
+            act.runOnUiThread(new Runnable() { // UI operations must run on this thread
+                @Override
+                public void run() {
+                    try {
+                        sensorAgeView.setText("Sensor Age: ??.?");
+                        double sAge = 0.0d;
+                        sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
+                        sensorAgeView.setText("Sensor " + sensorAge);
+                        int time = Profile.secondsFromMidnight() / 60;
+                        if (sAge >= 13.0 &&
+                                !SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
+                                time > 10 * 60 && time < 23 * 60) {
+                            // Over time, not yet warned and during waking hours: warn "place new sensor"
+                            SP.putBoolean("sensor_replace_warned", Boolean.TRUE);
+                            Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
+                            alarm.putExtra("soundid", R.raw.prewarn_new_sensor);
+                            MainApp.instance().startService(alarm);
+                            sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.warning));
+                            log.info("xDrip sensor age updated, prewarned");
+                        } else if (sAge < 13.0) {
+                            SP.putBoolean("sensor_replace_warned", Boolean.FALSE);
+                            sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
+                            log.info("Sensor prewarn reset");
                         }
+                        SP.putDouble("last_sensor_age", sAge);
+                        lastCalled = DateUtil.now();
+                        lastSensorAge = currentSensorAge;
+                    } catch (Exception e) {
+                        log.info("" + e);
+                        e.printStackTrace();
+                        log.info(e.getMessage());
                     }
-                });
-
-            } else {
-                log.info("Error calling xDrip REST: " + myConnection.getResponseCode() + myConnection.getResponseMessage());
-            }
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
             log.info("Exception starting xDrip REST: " + e.getMessage());

@@ -8,4 +8,5 @@ Based on 2.3 with additions:
 - warns when libre sensor is past 13 days (depends on xDrip mod)
 - NS upload of BG reading so xDrip can be local (depends on xDrip mod)
 - black background on overview
+- display insuline left on overview and ignore 25U left on insight pump warning
 - some minor changes
