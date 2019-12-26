@@ -73,7 +73,6 @@ public class SensorAgeTask implements Runnable {
                         sensorAgeView.setText("Sensor Age: ??.?");
                         double sAge = 0.0d;
                         sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
-                        sensorAgeView.setText("Sensor " + sensorAge);
                         int time = Profile.secondsFromMidnight() / 60;
                         if (sAge >= 13.0 &&
                                 !SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
@@ -83,10 +82,12 @@ public class SensorAgeTask implements Runnable {
                             Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
                             alarm.putExtra("soundid", R.raw.prewarn_new_sensor);
                             MainApp.instance().startService(alarm);
+                            sensorAgeView.setText("PLACE NEW SENSOR (" + sensorAge+")");
                             sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.warning));
                             log.info("xDrip sensor age updated, prewarned");
                         } else if (sAge < 13.0) {
                             SP.putBoolean("sensor_replace_warned", Boolean.FALSE);
+                            sensorAgeView.setText("Sensor " + sensorAge);
                             sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
                             log.info("Sensor prewarn reset");
                         }

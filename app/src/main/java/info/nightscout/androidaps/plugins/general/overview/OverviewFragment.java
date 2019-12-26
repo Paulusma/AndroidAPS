@@ -1117,12 +1117,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         if(insulinLeftView!=null){
             //!!! display insulin left, warn when low
             double reservoirLevel = pump.isInitialized() ? pump.getReservoirLevel() : -1;
-            insulinLeftView.setText("Insulin left: "+reservoirLevel+"U");
             if(reservoirLevel <= 10){
+                insulinLeftView.setText("REPLACE CARTRIDGE ("+reservoirLevel+"U)");
                 insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationUrgent));
             }else if(reservoirLevel <= 25) {
+                insulinLeftView.setText("Insulin low ("+reservoirLevel+"U)");
                 insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationAnnouncement));
             }else{
+                insulinLeftView.setText("Insulin left: "+reservoirLevel+"U");
                 insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
             }
         }
