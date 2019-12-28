@@ -31,7 +31,6 @@ import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
-import info.nightscout.androidaps.plugins.general.overview.graphExtensions.TimeAsXAxisLabelFormatter;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
@@ -217,12 +216,7 @@ public class StateDataActivity extends AppCompatActivity {
                 graphData.addBgReadings(fromTime, toTime, lowLine, highLine, null, dataProvider);
 
             // set manual x bounds to have nice steps
-//            graphData.formatAxis(fromTime, toTime);
-            bgGraph.getViewport().setMaxX(fromTime+6*60*60*1000);
-            bgGraph.getViewport().setMinX(fromTime);
-            bgGraph.getViewport().setXAxisBoundsManual(true);
-            bgGraph.getGridLabelRenderer().setLabelFormatter(new TimeAsXAxisLabelFormatter("HH"));
-            bgGraph.getGridLabelRenderer().setNumHorizontalLabels(7); // only 7 because of the space
+            graphData.formatAxis(fromTime, toTime);
 
             if(SP.getBoolean("showactivityprimary", true)) {
                 graphData.addActivity(fromTime, toTime, false, 1d, dataProvider);

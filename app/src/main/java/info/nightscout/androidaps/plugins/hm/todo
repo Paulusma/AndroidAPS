@@ -1,5 +1,6 @@
 
 TODO: pre-set start-of-day meal/bolus
+TODO: auto switch profile %% based on current sensitivity
 
 Hypopredictor:
 TODO 0-temp if BG < 4 mmol

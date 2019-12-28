@@ -1432,6 +1432,11 @@
     <string name="mealadvisor_startbg_summary">Threshold BG to start eating</string>
     <string name="mealadvisor_minsprewarn">Mins to warn before start eating</string>
     <string name="mealadvisor_minsprewarn_summary">Mins to warn before start eating</string>
+    <string name="eventfacade">EventFacade</string>
+    <string name="eventfacade_shortname">EvtFac</string>
+    <string name="description_eventfacade">Facade for AAPS events</string>
+    <string name="profileswitcher">profileswitcher</string>
+    <string name="description_profileswitchere">Automatically change profile %% to current sensitivity</string>
 
     <string-array name="logcat_spinner">
         <item>Verbose</item>

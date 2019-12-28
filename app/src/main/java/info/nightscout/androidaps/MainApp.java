@@ -51,6 +51,7 @@ import info.nightscout.androidaps.plugins.general.persistentNotification.Persist
 import info.nightscout.androidaps.plugins.general.smsCommunicator.SmsCommunicatorPlugin;
 import info.nightscout.androidaps.plugins.general.wear.WearPlugin;
 import info.nightscout.androidaps.plugins.general.xdripStatusline.StatuslinePlugin;
+import info.nightscout.androidaps.plugins.hm.ProfileSwitcherPlugin;
 import info.nightscout.androidaps.plugins.hm.dropbgtarget.DropBGTargetPlugin;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
@@ -192,6 +193,7 @@ public class MainApp extends Application {
             if (Config.SAFETY) pluginsList.add(StorageConstraintPlugin.getPlugin());
     //        if (Config.APS) pluginsList.add(ObjectivesPlugin.getPlugin());
             pluginsList.add(StateDataPlugin.getPlugin());
+            pluginsList.add(ProfileSwitcherPlugin.getPlugin());
             pluginsList.add(SourceXdripPlugin.getPlugin());
             pluginsList.add(SourceNSClientPlugin.getPlugin());
             pluginsList.add(SourceMM640gPlugin.getPlugin());

@@ -102,6 +102,7 @@ public class L {
     public static final String HGDPROV = "HGDPROV";
     public static final String MEALADVISOR = "MEALADVISOR";
     public static final String HMTASK = "HMTASK";
+    public static final String PSW = "PSW";
 
 
     private static void initialize() {
@@ -133,6 +134,7 @@ public class L {
         logElements.add(new LogElement(HGDPROV, true));
         logElements.add(new LogElement(MEALADVISOR, true));
         logElements.add(new LogElement(HMTASK, true));
+        logElements.add(new LogElement(PSW, true));
     }
 
 }
