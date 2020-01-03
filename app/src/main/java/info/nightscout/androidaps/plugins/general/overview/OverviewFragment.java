@@ -99,6 +99,7 @@ import info.nightscout.androidaps.plugins.general.overview.dialogs.NewTreatmentD
 import info.nightscout.androidaps.plugins.general.overview.dialogs.WizardDialog;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
 import info.nightscout.androidaps.plugins.general.wear.ActionStringHandler;
+import info.nightscout.androidaps.plugins.hm.BatteryLevelTask;
 import info.nightscout.androidaps.plugins.hm.SensorAgeTask;
 import info.nightscout.androidaps.plugins.hm.hypopredictor.HypoPredictorPlugin;
 import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
@@ -1112,6 +1113,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 e.printStackTrace();
                 log.info(e.getMessage());
             }
+        }
+
+        //!!! Check battery level
+        try {
+            AsyncTask.execute(new BatteryLevelTask(getActivity()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.info(e.getMessage());
         }
 
         if(insulinLeftView!=null){

@@ -9,4 +9,5 @@ Based on 2.3 with additions:
 - NS upload of BG reading so xDrip can be local (depends on xDrip mod)
 - black background on overview
 - display insuline left on overview and ignore 25U left on insight pump warning
+- warning when phone battery < 20% and not charging
 - some minor changes
