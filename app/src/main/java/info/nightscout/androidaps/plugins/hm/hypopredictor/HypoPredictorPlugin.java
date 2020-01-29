@@ -684,17 +684,28 @@ public class HypoPredictorPlugin extends PluginBase {
                     sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
                 else
                     sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
-                NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
-                n.soundId = R.raw.urgentalarm;
-                double ncGrams = (int) gramCarbs30Min;
-                n.action(MainApp.gs(R.string.request), () ->
-                        new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros30Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
-                MainApp.bus().post(new EventNewNotification(n));
+                if(MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs()>0){
+                    if(MealAdvisorPlugin.getPlugin().getScheduledCarbs()>gramCarbs30Min+gramCarbs60Min) {
+                        // Hypo imminent but meal scheduled => start eating right away
+                        log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal.");
+                        MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                    }else{
+                        // TODO: what if meal doesn't cover expected hypo req... for now: just eat the meal
+                        log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal. NOTE: meal doesn't fully cover hypo requirement.");
+                        MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                    }
+                }else {
+                    NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
+                    n.soundId = R.raw.urgentalarm;
+                    double ncGrams = (int) gramCarbs30Min;
+                    n.action(MainApp.gs(R.string.request), () ->
+                            new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros30Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
+                    MainApp.bus().post(new EventNewNotification(n));
 
-                if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
-                    NSUpload.uploadError(n.text);
+                    if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
+                        NSUpload.uploadError(n.text);
+                    }
                 }
-
                 log.info("Alarm raised.");
                 SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
             } else

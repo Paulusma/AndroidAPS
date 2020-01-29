@@ -66,6 +66,7 @@ public class SensorAgeTask implements Runnable {
 
 
             final String sensorAge = currentSensorAge;
+            log.info("Sensor age: " + sensorAge);
             act.runOnUiThread(new Runnable() { // UI operations must run on this thread
                 @Override
                 public void run() {
@@ -74,24 +75,23 @@ public class SensorAgeTask implements Runnable {
                         double sAge = 0.0d;
                         sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
                         int time = Profile.secondsFromMidnight() / 60;
-                        if (sAge >= 13.0 &&
-                                !SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
+                        if (sAge >= 14.0){
+                            if(!SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
                                 time > 10 * 60 && time < 23 * 60) {
-                            // Over time, not yet warned and during waking hours: warn "place new sensor"
-                            SP.putBoolean("sensor_replace_warned", Boolean.TRUE);
-                            Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
-                            alarm.putExtra("soundid", R.raw.prewarn_new_sensor);
-                            MainApp.instance().startService(alarm);
-                            sensorAgeView.setText("PLACE NEW SENSOR (" + sensorAge+")");
-                            sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.warning));
-                            log.info("xDrip sensor age updated, prewarned");
-                        } else if (sAge < 13.0) {
+                                // Over time, not yet warned and during waking hours: warn "place new sensor"
+                                SP.putBoolean("sensor_replace_warned", Boolean.TRUE);
+                                Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
+                                alarm.putExtra("soundid", R.raw.prewarn_new_sensor);
+                                MainApp.instance().startService(alarm);
+                                log.info("prewarned");
+                            }
+                            sensorAgeView.setText("PLACE NEW SENSOR (" + sensorAge + ")");
+                            sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationUrgent));
+                        } else {
                             SP.putBoolean("sensor_replace_warned", Boolean.FALSE);
                             sensorAgeView.setText("Sensor " + sensorAge);
                             sensorAgeView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
-                            log.info("Sensor prewarn reset");
                         }
-                        SP.putDouble("last_sensor_age", sAge);
                         lastCalled = DateUtil.now();
                         lastSensorAge = currentSensorAge;
                     } catch (Exception e) {

@@ -29,7 +29,7 @@ public class BatteryLevelTask implements Runnable {
         try {
             int batteryLevel = BatteryUtils.getLevel();
             boolean isCharging = BatteryUtils.isCharging();
-            if(batteryLevel <101 && isCharging && System.currentTimeMillis() - lastWarning > 30*60*1000) {
+            if(batteryLevel < 20 && !isCharging && System.currentTimeMillis() - lastWarning > 30*60*1000) {
                 Notification n = new Notification(Notification.HYPO_ALERT, "Batterij raakt leeg!", Notification.URGENT);
                 n.soundId = R.raw.urgentalarm;
                 MainApp.bus().post(new EventNewNotification(n));
