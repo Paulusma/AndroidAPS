@@ -633,7 +633,8 @@ public class HypoPredictorPlugin extends PluginBase {
 
             long hypoStart = SP.getLong("hypoStart", now());
             MealData mealData = TreatmentsPlugin.getPlugin().getMealData();
-            if (now() < hypoStart && mLastStatus.glucose > 3 * 18 && Math.ceil(mealData.mealCOB - 0.25 * mealData.carbs) > 5) {
+            log.info("COB: "+Math.ceil(mealData.mealCOB));
+            if (now() < hypoStart && mLastStatus.glucose > 3 * 18 && Math.ceil(mealData.mealCOB) > 10) {
  /* disabled since we now have mealadvisor
                // If enough meal carbs remain issue a warning instead of alert
                 Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
@@ -661,8 +662,8 @@ public class HypoPredictorPlugin extends PluginBase {
                 double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
                 gramCarbs30Min = (int) Math.ceil(mCurrentProfile.getIc() * (lowLevel - hypo.getBgAt30Min()) / sens);
                 gramCarbs60Min = (int) Math.ceil(mCurrentProfile.getIc() * (hypo.getBgAt30Min() - hypo.getBgAt60Min()) / sens);
+                log.info("Carbs required: " + gramCarbs30Min);
                 if (gramCarbs30Min > 0) {
-                    log.info("Carbs required before recent carb correction: " + gramCarbs30Min);
                     // Correct for carb intake since start of hypo
                     List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
                     for (Treatment treatment : treatments) {
@@ -675,11 +676,12 @@ public class HypoPredictorPlugin extends PluginBase {
                         }
                     }
                     gramCarbs60Min += (gramCarbs30Min < 0 ? gramCarbs30Min : 0.0d);
-                    log.info("Carbs required: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
+                    log.info("Carbs required after correcting for recent carbs: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
                 }
             }
             if (inMins > 10) {
                 if (gramCarbs30Min + gramCarbs60Min > 0) {
+                    log.info("Hypo  > 10 min requiring: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
                     // Still time to correct with normal food
                     long nextHypoWarn = SP.getLong("nextHypoWarn", 0L);
                     if (nextHypoWarn <= now()) {
@@ -701,7 +703,7 @@ public class HypoPredictorPlugin extends PluginBase {
                         SP.putLong("nextHypoWarn", now() + 10 * 60 * 1000);
                     }
                 } else
-                    log.info("No alarm raised (no carbs required)");
+                    log.info("Hypo  > 10 min: No alarm raised (no carbs required)");
             } else {
                 String sMins, sCarbs = "";
                 int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
