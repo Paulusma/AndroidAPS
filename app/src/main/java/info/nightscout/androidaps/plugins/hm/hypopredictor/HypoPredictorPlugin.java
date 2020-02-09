@@ -1,5 +1,7 @@
 package info.nightscout.androidaps.plugins.hm.hypopredictor;
 
+import android.content.Intent;
+
 import com.squareup.otto.Subscribe;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -46,6 +48,7 @@ import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorP
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
 
@@ -277,7 +280,7 @@ public class HypoPredictorPlugin extends PluginBase {
 
                 if (mCurrentTarget == null || (
                         mCurrentTarget.low < lowTTTargetLevel
-                        && !mCurrentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon)))) {
+                                && !mCurrentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon)))) {
                     log.info("LOW TT replaces current TT");
                     startLowTT(lowTTTargetLevel, duration, low);
                 } else if (log.isInfoEnabled()) {
@@ -289,8 +292,8 @@ public class HypoPredictorPlugin extends PluginBase {
             BGLow hypo = getImminentHypo(detectedLowsAndHypos);
             if (hypo != null) {
                 executeHypoAlert(hypo);
-            } else{
-                SP.putLong("hypoStart", now()+60*60*1000); // hypo has not yet started => set to some future time
+            } else {
+                SP.putLong("hypoStart", now() + 60 * 60 * 1000); // hypo has not yet started => set to some future time
                 log.info("No imminent hypo");
             }
         } catch (Exception e) {
@@ -314,7 +317,7 @@ public class HypoPredictorPlugin extends PluginBase {
         }
 
         // No LOW prevention if there are carbs scheduled within the next hour
-        if(MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0){
+        if (MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
             log.info("Skip LOW detection - meal scheduled");
             return null;
         }
@@ -601,10 +604,10 @@ public class HypoPredictorPlugin extends PluginBase {
             // Update if we are already below threshold
             if (firstHypo != null) {
                 log.info("Hypo - ACT " + "(" + firstHypo.getLowestBG() + "@" + firstHypo.getLowestBGMins() + ")");
-                return new BGLow("ACT", true, 0, firstHypo.getLowestBG(), firstHypo.getLowestBGMins(),firstHypo.getBgAt30Min(),firstHypo.getBgAt60Min());
+                return new BGLow("ACT", true, 0, firstHypo.getLowestBG(), firstHypo.getLowestBGMins(), firstHypo.getBgAt30Min(), firstHypo.getBgAt60Min());
             } else {
                 log.info("Hypo - ACT (?@?)");
-                return new BGLow("ACT", true, 0, 0.0, -1,0,0);
+                return new BGLow("ACT", true, 0, 0.0, -1, 0, 0);
             }
         }
 
@@ -623,14 +626,14 @@ public class HypoPredictorPlugin extends PluginBase {
         long nextHypoAlarm = SP.getLong("nextHypoAlarm", 0L);
         if (nextHypoAlarm <= now()) {
 
-            if(mCobInfo.futureCarbs>0){
+            if (mCobInfo.futureCarbs > 0) {
                 log.info("Skip hypo alert: futurecarbs present");
                 return;
             }
 
             long hypoStart = SP.getLong("hypoStart", now());
             MealData mealData = TreatmentsPlugin.getPlugin().getMealData();
-            if(now() < hypoStart && mLastStatus.glucose > 3*18 && Math.ceil(mealData.mealCOB - 0.25*mealData.carbs)>5){
+            if (now() < hypoStart && mLastStatus.glucose > 3 * 18 && Math.ceil(mealData.mealCOB - 0.25 * mealData.carbs) > 5) {
  /* disabled since we now have mealadvisor
                // If enough meal carbs remain issue a warning instead of alert
                 Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
@@ -649,15 +652,15 @@ public class HypoPredictorPlugin extends PluginBase {
                 log.info("Start of hypo");
             }
 
-            double gramCarbs30Min=0,gramCarbs60Min=0;
+            int gramCarbs30Min = 0, gramCarbs60Min = 0;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
             if (hypo.getLowestBGMins() != -1) {
                 // Calculate #grams required to get BG back to LOW level
                 double lowLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0.0d),
                         mCurrentProfile.getUnits());
                 double sens = Profile.toMgdl(mCurrentProfile.getIsf(), mCurrentProfile.getUnits());
-                gramCarbs30Min = (mCurrentProfile.getIc() * (lowLevel - hypo.getBgAt30Min()) / sens);
-                gramCarbs60Min = (mCurrentProfile.getIc() * (hypo.getBgAt30Min() - hypo.getBgAt60Min()) / sens);
+                gramCarbs30Min = (int) Math.ceil(mCurrentProfile.getIc() * (lowLevel - hypo.getBgAt30Min()) / sens);
+                gramCarbs60Min = (int) Math.ceil(mCurrentProfile.getIc() * (hypo.getBgAt30Min() - hypo.getBgAt60Min()) / sens);
                 if (gramCarbs30Min > 0) {
                     log.info("Carbs required before recent carb correction: " + gramCarbs30Min);
                     // Correct for carb intake since start of hypo
@@ -666,50 +669,76 @@ public class HypoPredictorPlugin extends PluginBase {
                         if (treatment.isValid
                                 && (treatment.date < now() && treatment.date > hypoStart)
                                 && treatment.carbs > 0) {
-                            double gramsCOB = Math.max(0, treatment.carbs * (treatment.date + 60 * 60 * 1000 - now()) / (60 * 60 * 1000)); // assume fast acting carbs burn in 1hr
+                            int gramsCOB = (int) Math.max(0, treatment.carbs * (treatment.date + 60 * 60 * 1000 - now()) / (60 * 60 * 1000)); // assume fast acting carbs burn in 1hr
                             log.info("Already took " + treatment.carbs + " grams at " + treatment.date + ", remaining: " + gramsCOB);
                             gramCarbs30Min -= gramsCOB;
                         }
                     }
-                    gramCarbs60Min += (gramCarbs30Min<0?gramCarbs30Min:0.0d);
-                    log.info("Carbs required: " + gramCarbs30Min+" ("+gramCarbs60Min+")");
+                    gramCarbs60Min += (gramCarbs30Min < 0 ? gramCarbs30Min : 0.0d);
+                    log.info("Carbs required: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
                 }
             }
-            String sMins, sCarbs = "";
-            int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
-            int dextros60Min = (int) Math.ceil((gramCarbs30Min+gramCarbs60Min) / 2.5) - dextros30Min;
-            if (gramCarbs30Min > 0) {
-                sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_carbs, dextros30Min,(dextros60Min>0?dextros60Min:0));
-                if (inMins > 0)
-                    sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
-                else
-                    sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
-                if(MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs()>0){
-                    if(MealAdvisorPlugin.getPlugin().getScheduledCarbs()>gramCarbs30Min+gramCarbs60Min) {
-                        // Hypo imminent but meal scheduled => start eating right away
-                        log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal.");
-                        MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
-                    }else{
-                        // TODO: what if meal doesn't cover expected hypo req... for now: just eat the meal
-                        log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal. NOTE: meal doesn't fully cover hypo requirement.");
-                        MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
-                    }
-                }else {
-                    NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
-                    n.soundId = R.raw.urgentalarm;
-                    double ncGrams = (int) gramCarbs30Min;
-                    n.action(MainApp.gs(R.string.request), () ->
-                            new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros30Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
-                    MainApp.bus().post(new EventNewNotification(n));
+            if (inMins > 10) {
+                if (gramCarbs30Min + gramCarbs60Min > 0) {
+                    // Still time to correct with normal food
+                    long nextHypoWarn = SP.getLong("nextHypoWarn", 0L);
+                    if (nextHypoWarn <= now()) {
+                        Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
+                        if (gramCarbs30Min + gramCarbs60Min < 5)
+                            alarm.putExtra("soundid", R.raw.prewarn_hypo_small);
+                        else if (gramCarbs30Min + gramCarbs60Min < 15)
+                            alarm.putExtra("soundid", R.raw.prewarn_hypo);
+                        else
+                            alarm.putExtra("soundid", R.raw.prewarn_hypo_large);
+                        MainApp.instance().startService(alarm);
 
-                    if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
-                        NSUpload.uploadError(n.text);
+                        if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
+                            NSUpload.uploadError(MainApp.gs(R.string.hypoppred_alert_msg, inMins)
+                                    + MainApp.gs(R.string.hypoppred_alert_msg_carbs, gramCarbs30Min, gramCarbs60Min));
+                        }
+
+                        log.info("Hypo prewarning raised.");
+                        SP.putLong("nextHypoWarn", now() + 10 * 60 * 1000);
                     }
-                }
-                log.info("Alarm raised.");
-                SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
-            } else
-                log.info("No alarm raised (no carbs required)");
+                } else
+                    log.info("No alarm raised (no carbs required)");
+            } else {
+                String sMins, sCarbs = "";
+                int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
+                int dextros60Min = (int) Math.ceil((gramCarbs30Min + gramCarbs60Min) / 2.5) - dextros30Min;
+                if (gramCarbs30Min > 0) {
+                    sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_dextr, dextros30Min, (dextros60Min > 0 ? dextros60Min : 0));
+                    if (inMins > 0)
+                        sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
+                    else
+                        sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
+                    if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
+                        if (MealAdvisorPlugin.getPlugin().getScheduledCarbs() > gramCarbs30Min + gramCarbs60Min) {
+                            // Hypo imminent but meal scheduled => start eating right away
+                            log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal.");
+                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                        } else {
+                            // TODO: what if meal doesn't cover expected hypo req... for now: just eat the meal
+                            log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal. NOTE: meal doesn't fully cover hypo requirement.");
+                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                        }
+                    } else {
+                        NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
+                        n.soundId = R.raw.urgentalarm;
+                        double ncGrams = (int) gramCarbs30Min;
+                        n.action(MainApp.gs(R.string.request), () ->
+                                new NewCarbsDialog().setInitialValues(ncGrams, MainApp.gs(R.string.hypopred_corr_note, dextros30Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
+                        MainApp.bus().post(new EventNewNotification(n));
+
+                        if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
+                            NSUpload.uploadError(n.text);
+                        }
+                    }
+                    log.info("Alarm raised.");
+                    SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
+                } else
+                    log.info("No alarm raised (no carbs required)");
+            }
         } else
             log.info("Snooze time not passed.");
     }

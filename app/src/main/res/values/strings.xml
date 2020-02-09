@@ -1387,7 +1387,8 @@
     <string name="hypoppred_alert_horizon_summary">Alert on hypo within (mins)</string>
     <string name="key_hypoppred_alert_horizon">hypoppred_alert_horizon</string>
     <string name="hypoppred_alert_horizon">Alert on hypo within (mins)</string>
-    <string name="hypoppred_alert_msg_carbs">, advice %1$d dextro (+%2$d)</string>
+    <string name="hypoppred_alert_msg_dextr">, advice %1$d dextro (+%2$d)</string>
+    <string name="hypoppred_alert_msg_carbs">, advice %1$d (+%2$d) grams</string>
     <string name="hypoppred_alert_msg_now">Hypo in progress</string>
     <string name="droptarget">Drop target when BG stable</string>
     <string name="droptarget_shortname">DTBG</string>
