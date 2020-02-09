@@ -45,8 +45,8 @@ import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
-import info.nightscout.androidaps.plugins.hm.stateviewer.StateData;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
+import info.nightscout.androidaps.plugins.hm.stateviewer.StateData;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventNewHistoryData;
 import info.nightscout.androidaps.plugins.pump.danaR.activities.DanaRNSHistorySync;
@@ -895,7 +895,9 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                     where.eq("_id", tempBasal._id);
                     PreparedQuery<TemporaryBasal> preparedQuery = queryBuilder.prepare();
                     List<TemporaryBasal> trList = getDaoTemporaryBasal().query(preparedQuery);
-                    if (trList.size() > 0) {
+//!!!>>#1963                     if (trList.size() > 0) {
+                    if (trList.size() > 0 && trList.get(0).pumpId == 0) { // don't update existing record if it has a pumpId
+//<<
                         old = trList.get(0);
                         if (!old.isEqual(tempBasal)) {
                             long oldDate = old.date;
@@ -946,7 +948,10 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try {
             List<TemporaryBasal> tempbasals;
             QueryBuilder<TemporaryBasal, Long> queryBuilder = getDaoTemporaryBasal().queryBuilder();
-            queryBuilder.orderBy("date", ascending);
+//!!!>>#1963 order by date and duration to ensure end of previous tbr doesn't override next tbr
+//            queryBuilder.orderBy("date", ascending);
+            queryBuilder.orderBy("date", ascending).orderBy("durationInMinutes", ascending);
+//<<
             Where where = queryBuilder.where();
             where.ge("date", mills);
             PreparedQuery<TemporaryBasal> preparedQuery = queryBuilder.prepare();
@@ -1421,7 +1426,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         return new ArrayList<>();
     }
 
-    public List<CareportalEvent> getCareportalEvents(long from, long to,boolean ascending) {
+    public List<CareportalEvent> getCareportalEvents(long from, long to, boolean ascending) {
         try {
             List<CareportalEvent> careportalEvents;
             QueryBuilder<CareportalEvent, Long> queryBuilder = getDaoCareportalEvents().queryBuilder();
@@ -1822,7 +1827,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             Dao<StateData, Long> daoHistoricGraphData = getDaoHistoricGraphData();
             List<StateData> historicGraphData;
             QueryBuilder<StateData, Long> queryBuilder = daoHistoricGraphData.queryBuilder();
-            queryBuilder.orderBy("date",true);
+            queryBuilder.orderBy("date", true);
             Where where = queryBuilder.where();
             where.between("date", from, to);
             PreparedQuery<StateData> preparedQuery = queryBuilder.prepare();
