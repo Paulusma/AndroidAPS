@@ -141,7 +141,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textSize="10sp"/>
 
                         <TextView
                             android:id="@+id/overview_delta"
@@ -149,7 +150,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textSize="10sp"/>
 
                         <TextView
                             android:id="@+id/overview_sage"
@@ -157,7 +159,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textSize="10sp"/>
 
                         <TextView
                             android:id="@+id/overview_hba1c"
@@ -165,7 +168,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textSize="10sp"/>
 
                         <TextView
                             android:id="@+id/overview_insulinleft"
@@ -173,7 +177,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textSize="10sp"/>
 
 
                     </LinearLayout>
