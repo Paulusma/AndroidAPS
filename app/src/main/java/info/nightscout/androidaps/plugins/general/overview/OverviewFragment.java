@@ -143,6 +143,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView deltaShortView;
     TextView insulinLeftView;
     TextView sensorAgeView;
+    TextView hba1cView;
     TextView baseBasalView;
     TextView extendedBolusView;
     TextView activeProfileView;
@@ -246,6 +247,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         deltaView = (TextView) view.findViewById(R.id.overview_delta);
         deltaShortView = (TextView) view.findViewById(R.id.overview_deltashort);
         sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
+        hba1cView = (TextView) view.findViewById(R.id.overview_hba1c);
         insulinLeftView = (TextView) view.findViewById(R.id.overview_insulinleft);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
@@ -1062,7 +1064,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
             int mealCarbs = (int) MealAdvisorPlugin.getPlugin().getScheduledCarbs();
             String mealTime = MealAdvisorPlugin.getPlugin().getMealTime();
-            if (mealCarbs > 0)
+            if (!mealTime.equals(""))
                 wizardButton.setText("" + mealCarbs + (mealTime.equals("") ? "" : "@" + mealTime));
         }
 
@@ -1105,10 +1107,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
         }
 
-        if (sensorAgeView != null) {
+        if (sensorAgeView != null && hba1cView != null) {
             //!!! Call xDrip REST service to display sensor age. Warn when >13d old.
             try {
-                AsyncTask.execute(new SensorAgeTask(getActivity(),sensorAgeView));
+                AsyncTask.execute(new SensorAgeTask(getActivity(),sensorAgeView,hba1cView));
             } catch (Exception e) {
                 e.printStackTrace();
                 log.info(e.getMessage());

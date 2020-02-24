@@ -33,22 +33,25 @@ public class SensorAgeTask implements Runnable {
 
     private Activity act;
     private TextView sensorAgeView;
+    private TextView hba1cAgeView;
     private static long lastCalled = 0;
     private static String lastSensorAge = "";
+    private static String lastHba1c = "";
 
-    public SensorAgeTask(Activity _act, TextView _tv) {
+    public SensorAgeTask(Activity _act, TextView _tv, TextView _tv2) {
         act = _act;
         sensorAgeView = _tv;
+        hba1cAgeView = _tv2;
     }
 
     @Override
     public void run() {
         HttpURLConnection myConnection = null;
-        String currentSensorAge;
+        String currentSensorAge,currentHba1c;
         try {
             // update age only once every half hour
             if (DateUtil.now() - lastCalled > 1000 * 60 * 30) {
-                URL xDripCall = new URL("http://127.0.0.1:17580/sgv.json?sensor=Y");
+                URL xDripCall = new URL("http://127.0.0.1:17580/sgv.json?sensor=Y&hba1c=Y");
                 myConnection = (HttpURLConnection) xDripCall.openConnection();
                 if (myConnection.getResponseCode() == 200) {
                     InputStream responseBody = myConnection.getInputStream();
@@ -56,14 +59,16 @@ public class SensorAgeTask implements Runnable {
                     JsonArray bgReadings = new JsonParser().parse(responseBodyReader).getAsJsonArray();
                     JsonObject obj = bgReadings.get(0).getAsJsonObject();
                     currentSensorAge = obj.get("sensor_status").getAsString();
+                    currentHba1c = obj.get("hba1c").getAsString();
                 } else {
                     log.info("Error calling xDrip REST: " + myConnection.getResponseCode() + myConnection.getResponseMessage());
                     myConnection.disconnect();
                     return;
                 }
-            } else
+            } else {
                 currentSensorAge = lastSensorAge;
-
+                currentHba1c = lastHba1c;
+            }
 
             final String sensorAge = currentSensorAge;
             log.info("Sensor age: " + sensorAge);
@@ -72,6 +77,7 @@ public class SensorAgeTask implements Runnable {
                 public void run() {
                     try {
                         sensorAgeView.setText("Sensor Age: ??.?");
+                        hba1cAgeView.setText(currentHba1c);
                         double sAge = 0.0d;
                         sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
                         int time = Profile.secondsFromMidnight() / 60;
@@ -94,6 +100,7 @@ public class SensorAgeTask implements Runnable {
                         }
                         lastCalled = DateUtil.now();
                         lastSensorAge = currentSensorAge;
+                        lastHba1c = currentHba1c;
                     } catch (Exception e) {
                         log.info("" + e);
                         e.printStackTrace();

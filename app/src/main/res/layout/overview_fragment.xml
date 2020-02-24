@@ -139,7 +139,7 @@
                             android:id="@+id/overview_timeago"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="10dp"
+                            android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -147,7 +147,7 @@
                             android:id="@+id/overview_delta"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="10dp"
+                            android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -155,7 +155,15 @@
                             android:id="@+id/overview_sage"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="10dp"
+                            android:layout_marginLeft="8dp"
+                            android:layout_weight="0.25"
+                            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                        <TextView
+                            android:id="@+id/overview_hba1c"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -163,7 +171,7 @@
                             android:id="@+id/overview_insulinleft"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="10dp"
+                            android:layout_marginLeft="8dp"
                             android:layout_weight="0.25"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 

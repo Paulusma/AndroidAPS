@@ -49,6 +49,7 @@ public class MealAdvisorPlugin extends PluginBase {
 
     // Persistent state
     public void setMealBolusDate(long mealBolusDate) {
+        log.info("Mealbolusdate set to "+DateUtil.dateAndTimeFullString(mealBolusDate));
         SP.putLong("mealBolusDate", mealBolusDate);
     }
 
@@ -65,6 +66,7 @@ public class MealAdvisorPlugin extends PluginBase {
     }
 
     public void setPreWarningRaised(boolean preWarningRaised) {
+        log.info("Prewarningraised set to "+preWarningRaised);
         SP.putBoolean("preWarningRaised", preWarningRaised);
     }
 
@@ -93,6 +95,7 @@ public class MealAdvisorPlugin extends PluginBase {
     }
 
     public void setRescheduledMealTime(boolean rescheduledMealTime) {
+        log.info("Set RescheduledMealTime to "+rescheduledMealTime);
         SP.putBoolean("rescheduledMealTime", rescheduledMealTime);
     }
 
@@ -211,7 +214,7 @@ TODO: pre-bolus en bolus bij start
             } else if (mLastStatus.glucose + mLastStatus.delta * (10 / 5) <= 4 * 18) {
                 // BG getting too low => start meal
                 log.info("Meal " + DateUtil.timeStringSeconds(mealDate()) + " pending but low BG => start meal.");
-                startMeal(R.raw.low_startmeal);
+                startMeal(R.raw.time_startmeal);
                 return;
             }
 
@@ -243,7 +246,8 @@ TODO: pre-bolus en bolus bij start
                     MainApp.instance().startService(alarm);
                     setPreWarningRaised(true);
                     log.info("Warning " + DateUtil.timeStringSeconds(mealDate()) + ": eating starts soon.");
-                }
+                }else
+                    log.info("PreWarning already raised.");
             }
         }
     }

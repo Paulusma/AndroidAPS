@@ -1,7 +1,5 @@
 package info.nightscout.androidaps.plugins.hm.hypopredictor;
 
-import android.content.Intent;
-
 import com.squareup.otto.Subscribe;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -48,7 +46,6 @@ import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorP
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
-import info.nightscout.androidaps.services.AlarmSoundService;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.SP;
 
@@ -679,7 +676,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     log.info("Carbs required after correcting for recent carbs: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
                 }
             }
-            if (inMins > 10) {
+ /*           if (inMins > 10) {
                 if (gramCarbs30Min + gramCarbs60Min > 0) {
                     log.info("Hypo  > 10 min requiring: " + gramCarbs30Min + " (" + gramCarbs60Min + ")");
                     // Still time to correct with normal food
@@ -705,6 +702,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 } else
                     log.info("Hypo  > 10 min: No alarm raised (no carbs required)");
             } else {
+   */
                 String sMins, sCarbs = "";
                 int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
                 int dextros60Min = (int) Math.ceil((gramCarbs30Min + gramCarbs60Min) / 2.5) - dextros30Min;
@@ -718,11 +716,11 @@ public class HypoPredictorPlugin extends PluginBase {
                         if (MealAdvisorPlugin.getPlugin().getScheduledCarbs() > gramCarbs30Min + gramCarbs60Min) {
                             // Hypo imminent but meal scheduled => start eating right away
                             log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal.");
-                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal);
                         } else {
                             // TODO: what if meal doesn't cover expected hypo req... for now: just eat the meal
                             log.info("Meal " + DateUtil.timeStringSeconds(MealAdvisorPlugin.getPlugin().mealDate()) + " pending but low BG => start meal. NOTE: meal doesn't fully cover hypo requirement.");
-                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.low_startmeal);
+                            MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal);
                         }
                     } else {
                         NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
@@ -740,7 +738,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
                 } else
                     log.info("No alarm raised (no carbs required)");
-            }
+//            }
         } else
             log.info("Snooze time not passed.");
     }
