@@ -276,7 +276,8 @@ TODO: pre-bolus en bolus bij start
         double startBG = Profile.toMgdl(SP.getDouble(R.string.key_mealadvisor_startbg, 108d)
                 , mCurrentProfile.getUnits());
         double deltaBG = Math.max((mLastStatus.glucose + mLastStatus.short_avgdelta * (10 / 5) - 4 * 18), 0);
-        long carbTime = (deltaBG <= 0 ? 0 : (long) (30 * deltaBG / (startBG - 4 * 18)));
+        long carbTime = (long) (30 * deltaBG / (startBG - 4 * 18));
+        carbTime = Math.max(carbTime,20);
         long date = Math.max(mealBolusDate() + carbTime * 60 * 1000, now() + 2 * 60 * 1000);
 
         log.info("Rescheduled " + DateUtil.timeStringSeconds(mealDate()) + " to " + DateUtil.timeStringSeconds(date));
