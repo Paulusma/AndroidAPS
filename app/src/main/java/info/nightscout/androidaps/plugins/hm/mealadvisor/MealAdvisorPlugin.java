@@ -311,8 +311,6 @@ TODO: pre-bolus en bolus bij start
         alarm.putExtra("soundid", resourceID);
         MainApp.instance().startService(alarm);
 
-        setMealBolusDate(0L);
-
         log.info("Meal started.");
         resetState();
 

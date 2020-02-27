@@ -1064,8 +1064,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)) {
             int mealCarbs = (int) MealAdvisorPlugin.getPlugin().getScheduledCarbs();
             String mealTime = MealAdvisorPlugin.getPlugin().getMealTime();
-            if (!mealTime.equals(""))
+            if (!"".equals(mealTime))
                 wizardButton.setText("" + mealCarbs + (mealTime.equals("") ? "" : "@" + mealTime));
+            else
+                wizardButton.setText("");
         }
 
         CareportalFragment.updateAge(getActivity(), sage, iage, cage, pbage);
