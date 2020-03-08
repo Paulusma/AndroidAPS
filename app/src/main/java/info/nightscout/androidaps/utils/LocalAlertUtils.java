@@ -94,7 +94,8 @@ public class LocalAlertUtils {
         if (SP.getBoolean(MainApp.gs(R.string.key_enable_missed_bg_readings_alert), false)
                 && bgReading != null && bgReading.date + missedReadingsThreshold() < System.currentTimeMillis()
                 && SP.getLong("nextMissedReadingsAlarm", 0l) < System.currentTimeMillis()
-                && !LoopPlugin.getPlugin().isSuspended()) {
+                && !LoopPlugin.getPlugin().isSuspended()
+                && !LoopPlugin.getPlugin().isDisconnected()) {
             Notification n = new Notification(Notification.BG_READINGS_MISSED, MainApp.gs(R.string.missed_bg_readings), Notification.URGENT);
             n.soundId = R.raw.alarm;
             SP.putLong("nextMissedReadingsAlarm", System.currentTimeMillis() + missedReadingsThreshold());

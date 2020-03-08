@@ -37,6 +37,7 @@ public class SensorAgeTask implements Runnable {
     private static long lastCalled = 0;
     private static String lastSensorAge = "";
     private static String lastHba1c = "";
+    private double maxAge = 14.0;
 
     public SensorAgeTask(Activity _act, TextView _tv, TextView _tv2) {
         act = _act;
@@ -81,7 +82,7 @@ public class SensorAgeTask implements Runnable {
                         double sAge = 0.0d;
                         sAge = Double.parseDouble(sensorAge.substring(4, sensorAge.length() - 1));
                         int time = Profile.secondsFromMidnight() / 60;
-                        if (sAge >= 14.0){
+                        if (sAge >= maxAge){
                             if(!SP.getBoolean("sensor_replace_warned", Boolean.FALSE) &&
                                 time > 10 * 60 && time < 23 * 60) {
                                 // Over time, not yet warned and during waking hours: warn "place new sensor"

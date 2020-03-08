@@ -661,14 +661,14 @@ public class HypoPredictorPlugin extends PluginBase {
                 gramCarbs60Min = (int) Math.ceil(mCurrentProfile.getIc() * (hypo.getBgAt30Min() - hypo.getBgAt60Min()) / sens);
                 log.info("Carbs required: " + gramCarbs30Min);
                 if (gramCarbs30Min > 0) {
-                    // Correct for carb intake since start of hypo
+                    // Correct for carb intake before start of hypo, assume all is fast acting carbs burning in 1hr
                     List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
                     for (Treatment treatment : treatments) {
                         if (treatment.isValid
-                                && (treatment.date < now() && treatment.date > hypoStart)
+                                && (treatment.date < now() && treatment.date > hypoStart - 60 * 60 * 1000)
                                 && treatment.carbs > 0) {
-                            int gramsCOB = (int) Math.max(0, treatment.carbs * (treatment.date + 60 * 60 * 1000 - now()) / (60 * 60 * 1000)); // assume fast acting carbs burn in 1hr
-                            log.info("Already took " + treatment.carbs + " grams at " + treatment.date + ", remaining: " + gramsCOB);
+                            int gramsCOB = (int) Math.max(0, treatment.carbs * (treatment.date + 60 * 60 * 1000 - now()) / (60 * 60 * 1000));
+                            log.info("Already took " + treatment.carbs + " grams at " + DateUtil.dateAndTimeFullString(treatment.date) + ", remaining: " + gramsCOB);
                             gramCarbs30Min -= gramsCOB;
                         }
                     }
@@ -703,15 +703,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     log.info("Hypo  > 10 min: No alarm raised (no carbs required)");
             } else {
    */
-                String sMins, sCarbs = "";
-                int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
-                int dextros60Min = (int) Math.ceil((gramCarbs30Min + gramCarbs60Min) / 2.5) - dextros30Min;
                 if (gramCarbs30Min > 0) {
-                    sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_dextr, dextros30Min, (dextros60Min > 0 ? dextros60Min : 0));
-                    if (inMins > 0)
-                        sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
-                    else
-                        sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
                     if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
                         if (MealAdvisorPlugin.getPlugin().getScheduledCarbs() > gramCarbs30Min + gramCarbs60Min) {
                             // Hypo imminent but meal scheduled => start eating right away
@@ -723,6 +715,14 @@ public class HypoPredictorPlugin extends PluginBase {
                             MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal);
                         }
                     } else {
+                        int dextros30Min = (int) Math.ceil(gramCarbs30Min / 2.5);
+                        int dextros60Min = (int) Math.ceil((gramCarbs30Min + gramCarbs60Min) / 2.5) - dextros30Min;
+                        String sMins, sCarbs = "";
+                        if (inMins > 0)
+                            sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
+                        else
+                            sMins = MainApp.gs(R.string.hypoppred_alert_msg_now, inMins);
+                        sCarbs = MainApp.gs(R.string.hypoppred_alert_msg_dextr, dextros30Min, (dextros60Min > 0 ? dextros60Min : 0));
                         NotificationWithAction n = new NotificationWithAction(Notification.HYPO_ALERT, sMins + sCarbs, Notification.URGENT);
                         n.soundId = R.raw.urgentalarm;
                         double ncGrams = (int) gramCarbs30Min;
