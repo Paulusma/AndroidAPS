@@ -793,9 +793,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             WizardDialog wizardDialog = new WizardDialog();
             String meal = entry.buttonText();
             if (meal.startsWith("Aantal KH"))
-                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), "Aantal KH");
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.percSugar().doubleValue(), "Aantal KH");
             else
-                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.buttonText());
+                wizardDialog.SetInitialValues(entry.carbs().doubleValue(), entry.percSugar().doubleValue(), entry.buttonText());
             wizardDialog.show(manager, "WizardDialog");
         }
     }

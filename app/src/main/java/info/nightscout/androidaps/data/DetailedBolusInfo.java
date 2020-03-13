@@ -30,6 +30,7 @@ public class DetailedBolusInfo {
     public boolean isSMB = false;          // is a Super-MicroBolus
     public long deliverAt = 0;             // SMB should be delivered within 1 min from this time
     public String notes = null;
+    public double glycemicIndex = 0;
 
     public DetailedBolusInfo copy() {
         DetailedBolusInfo n = new DetailedBolusInfo();

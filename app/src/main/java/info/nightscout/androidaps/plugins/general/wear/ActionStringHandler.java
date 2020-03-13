@@ -228,7 +228,7 @@ public class ActionStringHandler {
             DecimalFormat format = new DecimalFormat("0.00");
             DecimalFormat formatInt = new DecimalFormat("0");
             BolusWizard bolusWizard = new BolusWizard(profile, profileName, TreatmentsPlugin.getPlugin().getTempTargetFromHistory(),
-                    carbsAfterConstraints, cobInfo.displayCob, bgReading.valueToUnits(profile.getUnits()),
+                    carbsAfterConstraints,0, cobInfo.displayCob, bgReading.valueToUnits(profile.getUnits()),
                     0d, percentage, useBG, useCOB, useBolusIOB, useBasalIOB, false, useTT, useTrend);
 
             if (Math.abs(bolusWizard.getInsulinAfterConstraints() - bolusWizard.getCalculatedTotalInsulin()) >= 0.01) {

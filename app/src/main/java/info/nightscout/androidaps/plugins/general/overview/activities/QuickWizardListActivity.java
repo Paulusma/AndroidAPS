@@ -54,6 +54,7 @@ public class QuickWizardListActivity extends AppCompatActivity implements View.O
             holder.to.setText(DateUtil.timeString(qvData.get(position).validToDate()));
             holder.buttonText.setText(qvData.get(position).buttonText());
             holder.carbs.setText(DecimalFormatter.to0Decimal(qvData.get(position).carbs()) + " g");
+            holder.percSugar.setText("("+DecimalFormatter.to0Decimal(qvData.get(position).percSugar()) + "% sugar)");
         }
 
         @Override
@@ -70,6 +71,7 @@ public class QuickWizardListActivity extends AppCompatActivity implements View.O
             CardView cv;
             TextView buttonText;
             TextView carbs;
+            TextView percSugar;
             TextView from;
             TextView to;
             Button editButton;
@@ -82,6 +84,7 @@ public class QuickWizardListActivity extends AppCompatActivity implements View.O
                 cv = (CardView) itemView.findViewById(R.id.overview_quickwizard_cardview);
                 buttonText = (TextView) itemView.findViewById(R.id.overview_quickwizard_item_buttonText);
                 carbs = (TextView) itemView.findViewById(R.id.overview_quickwizard_item_carbs);
+                percSugar = (TextView) itemView.findViewById(R.id.overview_quickwizard_item_percSugar);
                 from = (TextView) itemView.findViewById(R.id.overview_quickwizard_item_from);
                 to = (TextView) itemView.findViewById(R.id.overview_quickwizard_item_to);
                 editButton = (Button) itemView.findViewById(R.id.overview_quickwizard_item_edit_button);

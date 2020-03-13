@@ -504,7 +504,6 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
         return newRecordCreated;
     }
 
-    // return true if new record is created
     @Override
     public boolean addToHistoryTreatment(DetailedBolusInfo detailedBolusInfo, boolean allowUpdate) {
         Treatment treatment = new Treatment();
@@ -522,11 +521,10 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
         TreatmentService.UpdateReturn creatOrUpdateResult = getService().createOrUpdate(treatment);
         boolean newRecordCreated = creatOrUpdateResult.newRecord;
         //log.debug("Adding new Treatment record" + treatment.toString());
-        if (detailedBolusInfo.carbTime != 0) {
+        if (detailedBolusInfo.carbTime > 0) {
             if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)
-                    && detailedBolusInfo.eventType == CareportalEvent.BOLUSWIZARD
-                    && detailedBolusInfo.insulin > 0.0) {
-                MealAdvisorPlugin.getPlugin().registerMeal((int) detailedBolusInfo.carbs, detailedBolusInfo.notes);
+                    && detailedBolusInfo.eventType == CareportalEvent.BOLUSWIZARD) {
+                MealAdvisorPlugin.getPlugin().registerMeal((int) detailedBolusInfo.carbs,(int)detailedBolusInfo.glycemicIndex, detailedBolusInfo.notes);
                 detailedBolusInfo.carbTime = 0;
                 detailedBolusInfo.carbs = 0.0;
             } else {
@@ -536,8 +534,13 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
                 carbsTreatment.carbs = detailedBolusInfo.carbs;
                 carbsTreatment.date = detailedBolusInfo.date + detailedBolusInfo.carbTime * 60 * 1000L + 1000L; // add 1 sec to make them different records
                 getService().createOrUpdate(carbsTreatment);
+                if(MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL))
+                    MealAdvisorPlugin.getPlugin().addMeal(carbsTreatment.date, (int) detailedBolusInfo.carbs,(int)detailedBolusInfo.glycemicIndex, detailedBolusInfo.notes);
             }
             //log.debug("Adding new Treatment record" + carbsTreatment);
+        }else if(treatment.carbs > 0){
+            if(MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL))
+                MealAdvisorPlugin.getPlugin().addMeal(treatment.date, (int) detailedBolusInfo.carbs,(int)detailedBolusInfo.glycemicIndex, detailedBolusInfo.notes);
         }
         if (newRecordCreated && detailedBolusInfo.isValid)
             NSUpload.uploadTreatmentRecord(detailedBolusInfo);

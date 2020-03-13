@@ -35,6 +35,7 @@ public class EditQuickWizardDialog extends DialogFragment implements View.OnClic
 
     EditText buttonEdit;
     EditText carbsEdit;
+    EditText percSugarEdit;
     Spinner fromSpinner;
     Spinner toSpinner;
     Spinner useBGSpinner;
@@ -61,6 +62,7 @@ public class EditQuickWizardDialog extends DialogFragment implements View.OnClic
         View view = inflater.inflate(R.layout.overview_editquickwizard_dialog, container, false);
         buttonEdit = (EditText) view.findViewById(R.id.overview_editquickwizard_button_edit);
         carbsEdit = (EditText) view.findViewById(R.id.overview_editquickwizard_carbs_edit);
+        percSugarEdit = (EditText) view.findViewById(R.id.overview_editquickwizard_percSugar_edit);
         fromSpinner = (Spinner) view.findViewById(R.id.overview_editquickwizard_from_spinner);
         toSpinner = (Spinner) view.findViewById(R.id.overview_editquickwizard_to_spinner);
         useBGSpinner = (Spinner) view.findViewById(R.id.overview_editquickwizard_usebg_spinner);
@@ -93,6 +95,7 @@ public class EditQuickWizardDialog extends DialogFragment implements View.OnClic
 
         buttonEdit.setText(entry.buttonText());
         carbsEdit.setText(entry.carbs().toString());
+        percSugarEdit.setText(entry.percSugar().toString());
         fromSpinner.setSelection(posFrom);
         toSpinner.setSelection(posTo);
 
@@ -123,6 +126,7 @@ public class EditQuickWizardDialog extends DialogFragment implements View.OnClic
                 try {
                     entry.storage.put("buttonText", buttonEdit.getText().toString());
                     entry.storage.put("carbs", SafeParse.stringToInt(carbsEdit.getText().toString()));
+                    entry.storage.put("percSugar", SafeParse.stringToInt(percSugarEdit.getText().toString()));
                     int validFromInt = DateUtil.toSeconds(fromSpinner.getSelectedItem().toString());
                     entry.storage.put("validFrom", validFromInt);
                     int validToInt = DateUtil.toSeconds(toSpinner.getSelectedItem().toString());

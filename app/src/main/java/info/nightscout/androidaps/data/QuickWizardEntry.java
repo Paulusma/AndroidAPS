@@ -39,6 +39,7 @@ public class QuickWizardEntry {
         {
             buttonText: "Meal",
             carbs: 36,
+            percSugar: 10,
             validFrom: 8 * 60 * 60, // seconds from midnight
             validTo: 9 * 60 * 60,   // seconds from midnight
             useBG: 0,
@@ -51,7 +52,7 @@ public class QuickWizardEntry {
         }
      */
     QuickWizardEntry() {
-        String emptyData = "{\"buttonText\":\"\",\"carbs\":0,\"validFrom\":0,\"validTo\":86340}";
+        String emptyData = "{\"buttonText\":\"\",\"carbs\":0,\"percSugar\":0,\"validFrom\":0,\"validTo\":86340}";
         try {
             storage = new JSONObject(emptyData);
         } catch (JSONException e) {
@@ -124,7 +125,7 @@ public class QuickWizardEntry {
             trend = true;
         }
 
-        return new BolusWizard(profile, profileName, tempTarget, carbs(), cob, bg, 0d, 100, true, useCOB() == YES, bolusIOB, basalIOB, superBolus, useTempTarget() == YES, trend, "QuickWizard");
+        return new BolusWizard(profile, profileName, tempTarget, carbs(), percSugar(),cob, bg, 0d, 100, true, useCOB() == YES, bolusIOB, basalIOB, superBolus, useTempTarget() == YES, trend, "QuickWizard");
     }
 
     public String buttonText() {
@@ -139,6 +140,15 @@ public class QuickWizardEntry {
     public Integer carbs() {
         try {
             return storage.getInt("carbs");
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        return 0;
+    }
+
+    public Integer percSugar() {
+        try {
+            return storage.getInt("percSugar");
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }

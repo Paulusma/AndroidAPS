@@ -431,7 +431,7 @@ public class IobCobCalculatorPlugin extends PluginBase {
             time = roundUpTime(previous);
             AutosensData data = autosensDataTable.get(time);
             if (data != null) {
-                log.debug(">>> AUTOSENSDATA Cache hit " + data.toString());
+              //  log.debug(">>> AUTOSENSDATA Cache hit " + data.toString());
                 return data;
             } else {
                 //log.debug(">>> AUTOSENSDATA Cache miss " + new Date(time).toLocaleString());

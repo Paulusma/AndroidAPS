@@ -20,7 +20,6 @@ import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.plugins.pump.insight.InsightAlertService;
 import info.nightscout.androidaps.plugins.pump.insight.descriptors.Alert;
 import info.nightscout.androidaps.plugins.pump.insight.descriptors.AlertStatus;
-import info.nightscout.androidaps.plugins.pump.insight.descriptors.AlertType;
 
 public class InsightAlertActivity extends AppCompatActivity {
 
@@ -242,24 +241,6 @@ public class InsightAlertActivity extends AppCompatActivity {
         else {
             this.errorDescription.setVisibility(View.VISIBLE);
             this.errorDescription.setText(Html.fromHtml(description));
-        }
-        if(alert.getAlertType() == AlertType.WARNING_31){
-            final InsightAlertActivity act = this;
-            // Low insulin warning handled by text color on overview
-            try {
-                runOnUiThread(new Runnable() { // UI operations must run on this thread
-                    @Override
-                    public void run() {
-                        try {
-                            act.confirmClicked(confirm);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }catch(Exception e){
-                e.printStackTrace();
-            }
         }
     }
 

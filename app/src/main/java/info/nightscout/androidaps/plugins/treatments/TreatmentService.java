@@ -36,7 +36,9 @@ import info.nightscout.androidaps.events.Event;
 import info.nightscout.androidaps.events.EventNsTreatment;
 import info.nightscout.androidaps.events.EventReloadTreatmentData;
 import info.nightscout.androidaps.events.EventTreatmentChange;
+import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.hm.mealadvisor.MealAdvisorPlugin;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventNewHistoryData;
 import info.nightscout.androidaps.utils.JsonHelper;
 
@@ -422,6 +424,12 @@ public class TreatmentService extends OrmLiteBaseService<DatabaseHelper> {
             if (L.isEnabled(L.DATATREATMENTS))
                 log.debug("Removing Treatment record from database: " + stored.toString());
             delete(stored);
+            if(stored.carbs>0){
+                if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)){
+                    MealAdvisorPlugin.getPlugin().removeMeal(stored.date);
+                }
+
+            }
             DatabaseHelper.updateEarliestDataChange(stored.date);
             scheduleTreatmentChange(null);
         }
@@ -439,6 +447,12 @@ public class TreatmentService extends OrmLiteBaseService<DatabaseHelper> {
             getDao().delete(treatment);
             DatabaseHelper.updateEarliestDataChange(treatment.date);
             this.scheduleTreatmentChange(treatment);
+            if(treatment.carbs>0){
+                if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL)){
+                    MealAdvisorPlugin.getPlugin().removeMeal(treatment.date);
+                }
+
+            }
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }

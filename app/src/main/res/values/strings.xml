@@ -1438,6 +1438,8 @@
     <string name="description_eventfacade">Facade for AAPS events</string>
     <string name="profileswitcher">profileswitcher</string>
     <string name="description_profileswitchere">Automatically change profile %% to current sensitivity</string>
+    <string name="overview_editquickwizard_percSugar">%% Sugar</string>
+    <string name="treatments_wizard_percSugar_label">%% Sugar</string>
 
     <string-array name="logcat_spinner">
         <item>Verbose</item>

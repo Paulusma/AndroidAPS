@@ -4,6 +4,9 @@ import android.content.Intent;
 
 import com.squareup.otto.Subscribe;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +49,183 @@ public class MealAdvisorPlugin extends PluginBase {
     private GlucoseStatus mLastStatus = null;
     private CobInfo mCobInfo = null;
     private IobTotal mIobTotal = null;
+    private JSONArray meals = new JSONArray();
+
+    private class ConsumedMeal {
+        private JSONObject storage;
+
+        ConsumedMeal() {
+            String emptyData = "{\"notes\":\"\",\"carbs\":0,\"glycemicindex\":0,\"date\":0}";
+            try {
+                storage = new JSONObject(emptyData);
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+        }
+
+        ConsumedMeal(JSONObject meal) {
+            storage = meal;
+        }
+
+        ConsumedMeal(String meal) {
+            try {
+                storage = new JSONObject(meal);
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+        }
+
+        public long getDate() {
+            try {
+                return storage.getLong("date");
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+            return 0;
+        }
+
+        public int getCarbs() {
+            try {
+                return storage.getInt("carbs");
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+            return 0;
+        }
+
+        public int getGlycemicIndex() {
+            try {
+                int gi=storage.getInt("glycemicindex");
+                gi = gi==0?15:gi;
+                return gi;
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+            return 0;
+        }
+
+        public String getNotes() {
+            try {
+                return storage.getString("notes");
+            } catch (JSONException e) {
+                log.error("Unhandled exception", e);
+            }
+            return "";
+        }
+    }
+
+    public void setData() {
+        String storedData = SP.getString("MealAdvisorMeals", "[]");
+        try {
+            meals = new JSONArray(storedData);
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    public void save() {
+        SP.putString("MealAdvisorMeals", meals.toString());
+    }
+
+    public ConsumedMeal getConsumedMeal(int position) {
+        try {
+            return new ConsumedMeal((JSONObject) meals.get(position));
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        return null;
+    }
+
+    public double carbsLeft() {
+        double carbsLeft = 0.0d;
+        if (meals.length() > 0) {
+            for (int i = meals.length() - 1; i >= 0; i--) {
+                ConsumedMeal meal = getConsumedMeal(i);
+
+                boolean mealHasCarbs = false;
+                if (meal.getDate() < now() && meal.getDate() > now() - 45 * 60 * 1000) {
+                    double timeFactor = (meal.getDate() + 45 * 60 * 1000 - now())*1.0d / (45 * 60 * 1000);
+                    double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
+                    carbsLeft += mealSugarLeft;
+                    mealHasCarbs = true;
+                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+                            mealSugarLeft + " (" +100*timeFactor + "% of " + meal.getCarbs()+")");
+                }
+                if (meal.getDate() < now() && meal.getDate() > now() - 120 * 60 * 1000) {
+                    double timeFactor = (meal.getDate() + 120 * 60 * 1000 - now())*1.0d / (120 * 60 * 1000);
+                    double mealCarbsLeft = meal.getCarbs() * (100-meal.getGlycemicIndex()) * timeFactor / 100;
+                    carbsLeft += mealCarbsLeft;
+                    mealHasCarbs = true;
+                    log.info("Other carbs left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+                            mealCarbsLeft + " (" + 100*timeFactor + "% of " + meal.getCarbs() + ")");
+                }
+
+                if(meal.getDate() < now() && !mealHasCarbs) {
+                    log.info("Meal has no carbs left");
+                    removeMeal(i);
+                }
+            }
+        }
+        return carbsLeft;
+    }
+
+    public double sugarLeft() {
+        double sugarLeft = 0.0d;
+        if (meals.length() > 0) {
+            for (int i = meals.length() - 1; i >= 0; i--) {
+                ConsumedMeal meal = getConsumedMeal(i);
+
+                if (meal.getDate() < now() && meal.getDate() > now() - 45 * 60 * 1000) {
+                    double timeFactor = (meal.getDate() + 45 * 60 * 1000 - now())*1.0d / (45 * 60 * 1000);
+                    double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
+                    sugarLeft += mealSugarLeft;
+                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs() + ")");
+                }
+            }
+        }
+        return sugarLeft;
+    }
+
+    public void addMeal(long mealDate, int mealCarbs, int mealGI, String mealNotes) {
+        String data = "{\"notes\":\"" + mealNotes + "\",\"carbs\":" + mealCarbs + ",\"glycemicindex\":" + mealGI + ",\"date\":" + mealDate + "}";
+        try {
+            JSONObject meal = new JSONObject(data);
+            meals.put(meal);
+            save();
+            log.info("Included meal @"+DateUtil.dateAndTimeFullString(meal.getLong("date"))+": " + data);
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    public void removeMeal(int position) {
+        try {
+            JSONObject meal = meals.getJSONObject(position);
+            log.info("Removed meal @"+DateUtil.dateAndTimeFullString(meal.getLong("date"))+": " + meal.toString());
+            meals.remove(position);
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        save();
+    }
+
+    public void removeMeal(long date) {
+        if (meals.length() > 0) {
+            for (int i = meals.length() - 1; i >= 0; i--) {
+                ConsumedMeal meal = getConsumedMeal(i);
+                if (Math.abs(meal.getDate() - date) < 10 * 1000) {
+                    log.info("Removed meal @" + DateUtil.dateAndTimeFullString(meal.getDate()) + ": " + meal.toString());
+                    meals.remove(i);
+                }
+            }
+        }
+        save();
+    }
 
     // Persistent state
     public void setMealBolusDate(long mealBolusDate) {
-        log.info("Mealbolusdate set to "+DateUtil.dateAndTimeFullString(mealBolusDate));
+        log.info("Mealbolusdate set to " + DateUtil.dateAndTimeFullString(mealBolusDate));
         SP.putLong("mealBolusDate", mealBolusDate);
     }
 
@@ -61,12 +237,16 @@ public class MealAdvisorPlugin extends PluginBase {
         SP.putDouble("mealCarbs", mealCarbs);
     }
 
+    public void setMealGI(double mealGI) {
+        SP.putDouble("mealGI", mealGI);
+    }
+
     public void setMealNotes(String mealNotes) {
         SP.putString("mealNotes", mealNotes);
     }
 
     public void setPreWarningRaised(boolean preWarningRaised) {
-        log.info("Prewarningraised set to "+preWarningRaised);
+        log.info("Prewarningraised set to " + preWarningRaised);
         SP.putBoolean("preWarningRaised", preWarningRaised);
     }
 
@@ -82,6 +262,10 @@ public class MealAdvisorPlugin extends PluginBase {
         return SP.getDouble("mealCarbs", 0.0);
     }
 
+    public double mealPercSugar() {
+        return SP.getDouble("mealGI", 0.0);
+    }
+
     public String mealNotes() {
         return SP.getString("mealNotes", "");
     }
@@ -95,7 +279,7 @@ public class MealAdvisorPlugin extends PluginBase {
     }
 
     public void setRescheduledMealTime(boolean rescheduledMealTime) {
-        log.info("Set RescheduledMealTime to "+rescheduledMealTime);
+        log.info("Set RescheduledMealTime to " + rescheduledMealTime);
         SP.putBoolean("rescheduledMealTime", rescheduledMealTime);
     }
 
@@ -218,8 +402,8 @@ TODO: pre-bolus en bolus bij start
                 return;
             }
 
-            if (now() - mealBolusDate() > 60 * 60 * 1000) {
-                // Bolus > 1hr ago => cancel meal
+            if (now() - mealBolusDate() > 45 * 60 * 1000) {
+                // Bolus > too long ago => cancel meal
                 Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
                 alarm.putExtra("soundid", R.raw.bolusgt1hr);
                 log.info("Meal " + DateUtil.timeStringSeconds(mealDate()) + " pending but bolus > 1hr ago => cancel meal.");
@@ -246,7 +430,7 @@ TODO: pre-bolus en bolus bij start
                     MainApp.instance().startService(alarm);
                     setPreWarningRaised(true);
                     log.info("Warning " + DateUtil.timeStringSeconds(mealDate()) + ": eating starts soon.");
-                }else
+                } else
                     log.info("PreWarning already raised.");
             }
         }
@@ -258,7 +442,7 @@ TODO: pre-bolus en bolus bij start
 
         // Cancel eating soon TT
         TempTarget currentTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
-        if(currentTarget!= null && currentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon)) ) {
+        if (currentTarget != null && currentTarget.reason.startsWith(MainApp.gs(R.string.eatingsoon))) {
             TempTarget tempTarget = new TempTarget()
                     .source(Source.USER)
                     .date(now())
@@ -277,7 +461,7 @@ TODO: pre-bolus en bolus bij start
                 , mCurrentProfile.getUnits());
         double deltaBG = Math.max((mLastStatus.glucose + mLastStatus.short_avgdelta * (10 / 5) - 4 * 18), 0);
         long carbTime = (long) (30 * deltaBG / (startBG - 4 * 18));
-        carbTime = Math.max(carbTime,20);
+        carbTime = Math.max(carbTime, 20);
         long date = Math.max(mealBolusDate() + carbTime * 60 * 1000, now() + 2 * 60 * 1000);
 
         log.info("Rescheduled " + DateUtil.timeStringSeconds(mealDate()) + " to " + DateUtil.timeStringSeconds(date));
@@ -306,6 +490,7 @@ TODO: pre-bolus en bolus bij start
         carbsTreatment.date = now();
         TreatmentsPlugin.getPlugin().getService().createOrUpdate(carbsTreatment);
         NSUpload.uploadTreatmentRecord(detailedBolusInfo);
+        addMeal(carbsTreatment.date, (int) mealCarbs(), (int) mealPercSugar(), mealNotes());
 
         Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
         alarm.putExtra("soundid", resourceID);
@@ -330,6 +515,7 @@ TODO: pre-bolus en bolus bij start
     private boolean initState(boolean forceLastStatus) {
         mCurrentProfile = ProfileFunctions.getInstance().getProfile();
 
+        setData(); // meals in past 1,5 hr
         if (forceLastStatus || mLastStatus == null) {
             mLastStatus = GlucoseStatus.getGlucoseStatusData(true);
             mCobInfo = IobCobCalculatorPlugin.getPlugin().getCobInfo(false, "Hypo detection");
@@ -357,7 +543,7 @@ TODO: pre-bolus en bolus bij start
                 && mLastStatus.short_avgdelta > 10));
     }
 
-    public void registerMeal(int carbs, String notes) {
+    public void registerMeal(int carbs, int percSugar, String notes) {
         initState(true);
 
         log.info("Register meal '" + notes + "'");
@@ -365,6 +551,7 @@ TODO: pre-bolus en bolus bij start
         setMealBolusDate(now());
         setMealDate(mealBolusDate() + 90 * 60 * 1000); // 90 min so that if meal is not rescheduled it will be cancelled after 60 min
         setMealCarbs(carbs);
+        setMealGI(percSugar);
         setMealNotes(notes);
 
         setPreWarningRaised(false);

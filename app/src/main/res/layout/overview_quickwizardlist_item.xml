@@ -60,6 +60,16 @@
                         android:textColor="@color/cardObjectiveText"
                         android:textStyle="normal|bold" />
 
+                    <TextView
+                        android:id="@+id/overview_quickwizard_item_percSugar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="10dp"
+                        android:text="(50% sugar)"
+                        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+                        android:textColor="@color/cardObjectiveText"
+                        android:textStyle="normal|bold" />
+
 
                 </LinearLayout>
 

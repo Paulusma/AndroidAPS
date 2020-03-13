@@ -43,6 +43,19 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:text="@string/overview_editquickwizard_percSugar"
+                android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+
+            <EditText
+                android:id="@+id/overview_editquickwizard_percSugar_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="numberDecimal" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:text="@string/overview_editquickwizard_valid"
                 android:textAppearance="@android:style/TextAppearance.Material.Medium" />
 

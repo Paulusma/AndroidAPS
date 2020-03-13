@@ -34,6 +34,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
                                             val profileName: String,
                                             val tempTarget: TempTarget?,
                                             val carbs: Int,
+                                            val glycemicIndex: Int,
                                             val cob: Double,
                                             val bg: Double,
                                             val correction: Double,
@@ -218,6 +219,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
             boluscalcJSON.put("bgdiff", bgDiff)
             boluscalcJSON.put("insulincarbs", insulinFromCarbs)
             boluscalcJSON.put("carbs", carbs)
+            boluscalcJSON.put("glycemicIndex", glycemicIndex)
             boluscalcJSON.put("cob", cob)
             boluscalcJSON.put("cobused", useCob)
             boluscalcJSON.put("insulincob", insulinFromCOB)
@@ -331,6 +333,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
                         detailedBolusInfo.eventType = CareportalEvent.BOLUSWIZARD
                         detailedBolusInfo.insulin = insulinAfterConstraints
                         detailedBolusInfo.carbs = carbs.toDouble()
+                        detailedBolusInfo.glycemicIndex = glycemicIndex.toDouble();
                         detailedBolusInfo.context = context
                         detailedBolusInfo.glucose = bg
                         detailedBolusInfo.glucoseType = "Manual"

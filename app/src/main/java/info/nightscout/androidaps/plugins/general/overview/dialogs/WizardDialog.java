@@ -87,6 +87,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
 
     NumberPicker editBg;
     NumberPicker editCarbs;
+    int editPercSugar;
     NumberPicker editCorr;
     CheckBox ctCheckBox;
 
@@ -104,11 +105,13 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
 
     private String meal;
     private Double mealCarbs;
+    private Double mealPercSugar;
 
 
-    public void SetInitialValues(Double _carbs, String _meal) {
+    public void SetInitialValues(Double _carbs, Double _percSugar, String _meal) {
         mealCarbs = _carbs;
         meal = _meal;
+        mealPercSugar = _percSugar;
     }
 
     public WizardDialog() {
@@ -150,6 +153,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         savedInstanceState.putBoolean("cobCheckbox", cobCheckbox.isChecked());
         savedInstanceState.putDouble("editBg", editBg.getValue());
         savedInstanceState.putDouble("editCarbs", editCarbs.getValue());
+        savedInstanceState.putInt("editPercSugar", editPercSugar);
         savedInstanceState.putDouble("editCorr", editCorr.getValue());
         savedInstanceState.putBoolean("ctCheckBox", ctCheckBox.isChecked());
         super.onSaveInstanceState(savedInstanceState);
@@ -266,6 +270,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
 
         editBg.setParams(0d, 0d, 500d, 0.1d, new DecimalFormat("0.0"), false, textWatcher);
         editCarbs.setParams(mealCarbs, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
+        editPercSugar = mealPercSugar.intValue();
         double bolusstep = ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep;
         editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
         notesEdit.setText(meal);
@@ -276,6 +281,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         //recovering state if there is something
         if (savedInstanceState != null) {
             editCarbs.setValue(savedInstanceState.getDouble("editCarbs"));
+            editPercSugar = savedInstanceState.getInt("editPercSugar");
             editBg.setValue(savedInstanceState.getDouble("editBg"));
             editCorr.setValue(savedInstanceState.getDouble("editCorr"));
         }
@@ -417,7 +423,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
                 c_cob = cobInfo.displayCob;
         }
 
-        wizard = new BolusWizard(specificProfile, profileName, tempTarget, carbsAfterConstraint, c_cob, c_bg, corrAfterConstraint, 100d, bgCheckbox.isChecked(), cobCheckbox.isChecked(), bolusIobCheckbox.isChecked(), basalIobCheckbox.isChecked(), superbolusCheckbox.isChecked(), ttCheckbox.isChecked(), bgtrendCheckbox.isChecked(), notesEdit.getText().toString(), ctCheckBox.isChecked());
+        wizard = new BolusWizard(specificProfile, profileName, tempTarget, carbsAfterConstraint, editPercSugar,c_cob, c_bg, corrAfterConstraint, 100d, bgCheckbox.isChecked(), cobCheckbox.isChecked(), bolusIobCheckbox.isChecked(), basalIobCheckbox.isChecked(), superbolusCheckbox.isChecked(), ttCheckbox.isChecked(), bgtrendCheckbox.isChecked(), notesEdit.getText().toString(), ctCheckBox.isChecked());
 
         bg.setText(c_bg + " ISF: " + DecimalFormatter.to1Decimal(wizard.getSens()));
         bgInsulin.setText(StringUtils.formatInsulin(wizard.getInsulinFromBG()));

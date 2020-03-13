@@ -142,7 +142,8 @@ public class InsightAlertService extends Service implements InsightConnectionSer
                     if ((this.alert == null && alert != null)
                             || (this.alert != null && alert == null)
                             || (this.alert != null && alert != null && !this.alert.equals(alert))) {
-                        if (this.alert != null && (alert == null || this.alert.getAlertId() != alert.getAlertId())) stopAlerting();
+                        if (this.alert != null && (alert == null || this.alert.getAlertId() != alert.getAlertId()))
+                            stopAlerting();
                         this.alert = alert;
                         if (alertActivity != null && alert != null)
                             new Handler(Looper.getMainLooper()).post(() -> alertActivity.update(alert));
@@ -155,7 +156,7 @@ public class InsightAlertService extends Service implements InsightConnectionSer
                         }
                         if (alertActivity != null)
                             new Handler(Looper.getMainLooper()).post(() -> alertActivity.finish());
-                    } else if (!(alert.getAlertType() == ignoreType && System.currentTimeMillis() - ignoreTimestamp < 10000))  {
+                    } else if (!(alert.getAlertType() == ignoreType && System.currentTimeMillis() - ignoreTimestamp < 10000)) {
                         if (alert.getAlertStatus() == AlertStatus.ACTIVE) alert();
                         else stopAlerting();
                         if (!connectionRequested) {
@@ -166,6 +167,17 @@ public class InsightAlertService extends Service implements InsightConnectionSer
                             Intent intent = new Intent(InsightAlertService.this, InsightAlertActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                             new Handler(Looper.getMainLooper()).post(() -> startActivity(intent));
+                        }
+                    }
+                    if (alert != null && alert.getAlertType() == AlertType.WARNING_31) {
+                        log.info("Trying to confirm W31 on pump...");
+                        // Low insulin warning handled by text color on overview
+                        try {
+                            log.info("Confirming on pump...");
+                            confirm();
+                            log.info("Pump confirmed.");
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -197,7 +209,7 @@ public class InsightAlertService extends Service implements InsightConnectionSer
 
     private void alert() {
         if (!vibrating) {
-            vibrator.vibrate(new long[] {0, 1000, 1000}, 0);
+            vibrator.vibrate(new long[]{0, 1000, 1000}, 0);
             vibrating = true;
         }
         if (ringtone == null || !ringtone.isPlaying()) {
@@ -236,9 +248,11 @@ public class InsightAlertService extends Service implements InsightConnectionSer
     public void confirm() {
         new Thread(() -> {
             try {
+                log.info("Start confirm...");
                 ConfirmAlertMessage confirmAlertMessage = new ConfirmAlertMessage();
                 confirmAlertMessage.setAlertID(alert.getAlertId());
                 connectionService.requestMessage(confirmAlertMessage).await();
+                log.info("... confirmed!");
             } catch (AppLayerErrorException e) {
                 log.info("Exception while confirming alert: " + e.getClass().getCanonicalName() + " (" + e.getErrorCode() + ")");
                 ExceptionTranslator.makeToast(InsightAlertService.this, e);
