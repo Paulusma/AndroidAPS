@@ -16,7 +16,7 @@ import info.nightscout.androidaps.utils.T;
 import static info.nightscout.androidaps.utils.DateUtil.now;
 
 public class CarbsGenerator {
-    public static void generateCarbs(int amount, long startTime, int duration, @Nullable String notes) {
+    public static void generateCarbs(int amount, int gi,long startTime, int duration, @Nullable String notes) {
         long remainingCarbs = amount;
         int ticks = (duration * 4); //duration guaranteed to be integer greater zero
         for (int i = 0; i < ticks; i++){
@@ -24,15 +24,16 @@ public class CarbsGenerator {
             int smallCarbAmount = (int) Math.round((1d * remainingCarbs) / (ticks-i));  //on last iteration (ticks-i) is 1 -> smallCarbAmount == remainingCarbs
             remainingCarbs -= smallCarbAmount;
             if (smallCarbAmount > 0)
-                createCarb(smallCarbAmount, carbTime, CareportalEvent.MEALBOLUS, notes);
+                createCarb(smallCarbAmount, gi, carbTime, CareportalEvent.MEALBOLUS, notes);
         }
     }
 
-    public static void createCarb(int carbs, long time, String eventType, @Nullable String notes) {
+    public static void createCarb(int carbs, int gi, long time, String eventType, @Nullable String notes) {
         DetailedBolusInfo carbInfo = new DetailedBolusInfo();
         carbInfo.date = time;
         carbInfo.eventType = eventType;
         carbInfo.carbs = carbs;
+        carbInfo.glycemicIndex = gi;
         carbInfo.context = MainApp.instance();
         carbInfo.source = Source.USER;
         carbInfo.notes = notes;

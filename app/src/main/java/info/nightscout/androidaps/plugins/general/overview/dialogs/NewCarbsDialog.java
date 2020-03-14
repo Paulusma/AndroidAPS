@@ -70,6 +70,7 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
 
     private Double mealCarbs = 0.0d;
     private String mealNotes = "";
+    private int mealGI = 15;
 
     private EditText notesEdit;
 
@@ -82,9 +83,10 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
         mHandlerThread.start();
     }
 
-    public NewCarbsDialog setInitialValues(Double _carbs,String _notes) {
+    public NewCarbsDialog setInitialValues(Double _carbs,int _gi, String _notes) {
         mealCarbs = _carbs;
         mealNotes = _notes;
+        mealGI = _gi;
 
         return this;
     }
@@ -189,6 +191,7 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
             editCarbs.setValue(savedInstanceState.getDouble("editCarbs"));
             editTime.setValue(savedInstanceState.getDouble("editTime"));
             editDuration.setValue(savedInstanceState.getDouble("editDuration"));
+            mealGI = savedInstanceState.getInt("mealGI");
         }
         return view;
     }
@@ -206,6 +209,7 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
         carbsDialogState.putDouble("editTime", editTime.getValue());
         carbsDialogState.putDouble("editDuration", editDuration.getValue());
         carbsDialogState.putDouble("editCarbs", editCarbs.getValue());
+        carbsDialogState.putInt("mealGI", mealGI);
         super.onSaveInstanceState(carbsDialogState);
     }
 
@@ -441,9 +445,9 @@ public class NewCarbsDialog extends DialogFragment implements OnClickListener, C
 
                         if (carbsAfterConstraints > 0) {
                             if (duration == 0) {
-                                CarbsGenerator.createCarb(carbsAfterConstraints, time, CareportalEvent.CARBCORRECTION, notes);
+                                CarbsGenerator.createCarb(carbsAfterConstraints, mealGI, time, CareportalEvent.CARBCORRECTION, notes);
                             } else {
-                                CarbsGenerator.generateCarbs(carbsAfterConstraints, time, duration, notes);
+                                CarbsGenerator.generateCarbs(carbsAfterConstraints, mealGI, time, duration, notes);
                                 NSUpload.uploadEvent(CareportalEvent.NOTE, now() - 2000, MainApp.gs(R.string.generated_ecarbs_note, carbsAfterConstraints, duration, timeOffset));
                             }
                         }

@@ -638,7 +638,7 @@ public class ActionStringHandler {
             long starttime = SafeParse.stringToLong(act[2]);
             int duration = SafeParse.stringToInt(act[3]);
 
-            doECarbs(carbs, starttime, duration);
+            doECarbs(carbs, 15, starttime, duration);
         } else if ("dismissoverviewnotification".equals(act[0])) {
             MainApp.bus().post(new EventDismissNotification(SafeParse.stringToInt(act[1])));
         } else if ("changeRequest".equals(act[0])) {
@@ -650,12 +650,12 @@ public class ActionStringHandler {
         lastBolusWizard = null;
     }
 
-    private static void doECarbs(int carbs, long time, int duration) {
+    private static void doECarbs(int carbs, int gi,long time, int duration) {
         if (carbs > 0) {
             if (duration == 0) {
-                CarbsGenerator.createCarb(carbs, time, CareportalEvent.CARBCORRECTION, "watch");
+                CarbsGenerator.createCarb(carbs, gi, time, CareportalEvent.CARBCORRECTION, "watch");
             } else {
-                CarbsGenerator.generateCarbs(carbs, time, duration, "watch eCarbs");
+                CarbsGenerator.generateCarbs(carbs, gi, time, duration, "watch eCarbs");
             }
         }
     }

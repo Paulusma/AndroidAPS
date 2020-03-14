@@ -149,7 +149,7 @@ public class MealAdvisorPlugin extends PluginBase {
                     carbsLeft += mealSugarLeft;
                     mealHasCarbs = true;
                     log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealSugarLeft + " (" +100*timeFactor + "% of " + meal.getCarbs()+")");
+                            mealSugarLeft + " (" +100*timeFactor + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex()+"%)");
                 }
                 if (meal.getDate() < now() && meal.getDate() > now() - 120 * 60 * 1000) {
                     double timeFactor = (meal.getDate() + 120 * 60 * 1000 - now())*1.0d / (120 * 60 * 1000);
@@ -157,7 +157,7 @@ public class MealAdvisorPlugin extends PluginBase {
                     carbsLeft += mealCarbsLeft;
                     mealHasCarbs = true;
                     log.info("Other carbs left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealCarbsLeft + " (" + 100*timeFactor + "% of " + meal.getCarbs() + ")");
+                            mealCarbsLeft + " (" + 100*timeFactor + "% of " + meal.getCarbs() +"*"+meal.getGlycemicIndex()+ "%)");
                 }
 
                 if(meal.getDate() < now() && !mealHasCarbs) {
@@ -180,7 +180,7 @@ public class MealAdvisorPlugin extends PluginBase {
                     double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
                     sugarLeft += mealSugarLeft;
                     log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs() + ")");
+                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex() + "%)");
                 }
             }
         }
@@ -194,6 +194,10 @@ public class MealAdvisorPlugin extends PluginBase {
             meals.put(meal);
             save();
             log.info("Included meal @"+DateUtil.dateAndTimeFullString(meal.getLong("date"))+": " + data);
+            if(mealCarbs == 0){
+                log.info("Spurious meal!!!");
+                new Exception().printStackTrace();
+            }
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
