@@ -399,11 +399,6 @@ TODO: pre-bolus en bolus bij start
                     startMeal(R.raw.time_startmeal);
                 }
                 return;
-            } else if (mLastStatus.glucose + mLastStatus.delta * (10 / 5) <= 4 * 18) {
-                // BG getting too low => start meal
-                log.info("Meal " + DateUtil.timeStringSeconds(mealDate()) + " pending but low BG => start meal.");
-                startMeal(R.raw.time_startmeal);
-                return;
             }
 
             if (now() - mealBolusDate() > 45 * 60 * 1000) {
