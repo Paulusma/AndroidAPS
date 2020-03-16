@@ -170,12 +170,9 @@ public class InsightAlertService extends Service implements InsightConnectionSer
                         }
                     }
                     if (alert != null && alert.getAlertType() == AlertType.WARNING_31) {
-                        log.info("Trying to confirm W31 on pump...");
                         // Low insulin warning handled by text color on overview
                         try {
-                            log.info("Confirming on pump...");
                             confirm();
-                            log.info("Pump confirmed.");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -248,7 +245,7 @@ public class InsightAlertService extends Service implements InsightConnectionSer
     public void confirm() {
         new Thread(() -> {
             try {
-                log.info("Start confirm...");
+                log.info("Trying to confirm W31 on pump...");
                 ConfirmAlertMessage confirmAlertMessage = new ConfirmAlertMessage();
                 confirmAlertMessage.setAlertID(alert.getAlertId());
                 connectionService.requestMessage(confirmAlertMessage).await();
