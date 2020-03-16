@@ -96,7 +96,7 @@ public class MealAdvisorPlugin extends PluginBase {
         public int getGlycemicIndex() {
             try {
                 int gi=storage.getInt("glycemicindex");
-                gi = gi==0?15:gi;
+                gi = gi==0?50:gi; // default: assume meal is 50% fast-acting ("sugar") and 50% slow. Is about average for meals.
                 return gi;
             } catch (JSONException e) {
                 log.error("Unhandled exception", e);
