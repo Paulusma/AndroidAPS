@@ -148,16 +148,16 @@ public class MealAdvisorPlugin extends PluginBase {
                     double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
                     carbsLeft += mealSugarLeft;
                     mealHasCarbs = true;
-                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealSugarLeft + " (" +100*timeFactor + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex()+"%)");
+//                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+//                            mealSugarLeft + " (" +100*timeFactor + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex()+"%)");
                 }
                 if (meal.getDate() < now() && meal.getDate() > now() - 120 * 60 * 1000) {
                     double timeFactor = (meal.getDate() + 120 * 60 * 1000 - now())*1.0d / (120 * 60 * 1000);
                     double mealCarbsLeft = meal.getCarbs() * (100-meal.getGlycemicIndex()) * timeFactor / 100;
                     carbsLeft += mealCarbsLeft;
                     mealHasCarbs = true;
-                    log.info("Other carbs left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealCarbsLeft + " (" + 100*timeFactor + "% of " + meal.getCarbs() +"*"+meal.getGlycemicIndex()+ "%)");
+//                    log.info("Other carbs left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+//                            mealCarbsLeft + " (" + 100*timeFactor + "% of " + meal.getCarbs() +"*"+meal.getGlycemicIndex()+ "%)");
                 }
 
                 if(meal.getDate() < now() && !mealHasCarbs) {
@@ -179,8 +179,8 @@ public class MealAdvisorPlugin extends PluginBase {
                     double timeFactor = (meal.getDate() + 45 * 60 * 1000 - now())*1.0d / (45 * 60 * 1000);
                     double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
                     sugarLeft += mealSugarLeft;
-                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex() + "%)");
+//                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+//                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex() + "%)");
                 }
             }
         }
@@ -460,7 +460,7 @@ TODO: pre-bolus en bolus bij start
                 , mCurrentProfile.getUnits());
         double deltaBG = Math.max((mLastStatus.glucose + mLastStatus.short_avgdelta * (10 / 5) - 4 * 18), 0);
         long carbTime = (long) (30 * deltaBG / (startBG - 4 * 18));
-        carbTime = Math.max(carbTime, 20);
+        carbTime = Math.max(carbTime, (deltaBG<=0?10:20));
         long date = Math.max(mealBolusDate() + carbTime * 60 * 1000, now() + 2 * 60 * 1000);
 
         log.info("Rescheduled " + DateUtil.timeStringSeconds(mealDate()) + " to " + DateUtil.timeStringSeconds(date));
