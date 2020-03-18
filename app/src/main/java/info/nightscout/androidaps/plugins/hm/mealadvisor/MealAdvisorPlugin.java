@@ -393,10 +393,10 @@ TODO: pre-bolus en bolus bij start
                 /* todo: check if additional insulin is needed: IOB not sufficient */
                 if (false /* todo no extra insulin needed */) {
                     log.info("Time " + DateUtil.timeStringSeconds(mealDate()) + " => start meal (need extra bolus)");
-                    startMeal(R.raw.time_startmeal);
+                    startMeal();
                 } else {
                     log.info("Time " + DateUtil.timeStringSeconds(mealDate()) + " => start meal.");
-                    startMeal(R.raw.time_startmeal);
+                    startMeal();
                 }
                 return;
             }
@@ -470,7 +470,7 @@ TODO: pre-bolus en bolus bij start
         MainApp.bus().post(new EventRefreshOverview("mealadvisor"));
     }
 
-    public synchronized boolean startMeal(int resourceID) {
+    public synchronized boolean startMeal() {
         if (mLastStatus == null || mIobTotal == null || mCobInfo == null) return false;
 
         DetailedBolusInfo detailedBolusInfo = new DetailedBolusInfo();
@@ -492,7 +492,13 @@ TODO: pre-bolus en bolus bij start
         addMeal(carbsTreatment.date, (int) mealCarbs(), (int) mealPercSugar(), mealNotes());
 
         Intent alarm = new Intent(MainApp.instance().getApplicationContext(), AlarmSoundService.class);
-        alarm.putExtra("soundid", resourceID);
+        if(mealNotes().toUpperCase().contains("KOFFIE"))
+//            if(now() - mealBolusDate()  > 20*60*1000)
+                alarm.putExtra("soundid", R.raw.time_koffie);
+//            else
+//                alarm.putExtra("soundid", R.raw.time_trixkoffie);
+        else
+            alarm.putExtra("soundid", R.raw.time_startmeal);
         MainApp.instance().startService(alarm);
 
         log.info("Meal started.");

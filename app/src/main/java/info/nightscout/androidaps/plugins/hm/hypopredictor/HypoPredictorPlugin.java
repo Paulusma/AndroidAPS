@@ -661,7 +661,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 4d),
                             mCurrentProfile.getUnits());
                     if (reqSugar > 10 || mLastStatus.glucose < hypoAlertLevel)
-                        MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal);
+                        MealAdvisorPlugin.getPlugin().startMeal();
                 } else {
                     int dextros30Min = (int) (Math.ceil(reqSugar / 2.5) + 0.5);
                     int dextros60Min = (int) (Math.ceil((reqCarbs) / 2.5) + 0.5 - dextros30Min);

@@ -818,7 +818,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                         builder.setTitle(mealStart + ": " + mealNotes);
                         builder.setMessage("Ingeplande maaltijd starten\nof verwijderen?\n\n(of druk op 'Afbreken'\n om dit scherm te sluiten)");
                         builder.setPositiveButton("Start", (dialog, id) -> {
-                            if (MealAdvisorPlugin.getPlugin().startMeal(R.raw.time_startmeal)) {
+                            if (MealAdvisorPlugin.getPlugin().startMeal()) {
                                 wizardButton.setText("");
                                 ToastUtils.showToastInUiThread(getContext(), "Maaltijd gestart");
                             } else
