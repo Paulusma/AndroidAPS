@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/overview_quickwizard_cardview"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -39,7 +40,6 @@
                     android:baselineAligned="true"
                     android:orientation="horizontal">
 
-
                     <TextView
                         android:id="@+id/overview_quickwizard_item_buttonText"
                         android:layout_width="wrap_content"
@@ -49,6 +49,13 @@
                         android:textAppearance="@android:style/TextAppearance.Material.Medium"
                         android:textStyle="normal|bold"
                         android:textColor="@color/cardObjectiveText" />
+
+                </LinearLayout>
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="true"
+                        android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/overview_quickwizard_item_carbs"
@@ -85,7 +92,9 @@
                         android:paddingLeft="10dp"
                         android:paddingRight="5dp"
                         android:text="@string/overview_editquickwizard_valid"
-                        android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+                        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+                        android:visibility="gone"
+                        tools:visibility="gone" />
 
                     <TextView
                         android:id="@+id/overview_quickwizard_item_from"
@@ -95,12 +104,15 @@
                         android:paddingRight="10dp"
                         android:text="07:45"
                         android:textAppearance="@android:style/TextAppearance.Material.Medium"
-                        android:textStyle="normal|bold" />
+                        android:textStyle="normal|bold"
+                        android:visibility="gone"
+                        tools:visibility="gone" />
 
                     <TextView
-                        android:text="-"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:text="-"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/overview_quickwizard_item_to"
@@ -110,7 +122,8 @@
                         android:paddingLeft="10dp"
                         android:text="11:45"
                         android:textAppearance="@android:style/TextAppearance.Material.Medium"
-                        android:textStyle="normal|bold" />
+                        android:textStyle="normal|bold"
+                        android:visibility="gone" />
 
                 </LinearLayout>
 
