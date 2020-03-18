@@ -18,11 +18,11 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import info.nightscout.androidaps.MainActivity;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.plugins.general.overview.OverviewFragment;
 import info.nightscout.androidaps.utils.SP;
@@ -37,10 +37,36 @@ public class QuickWizard {
     private JSONArray storage = new JSONArray();
 
     public void setData(JSONArray newData) {
-        storage = newData;
+        try {
+            List<JSONObject> myJsonArrayAsList = new ArrayList<JSONObject>();
+            for (int i = 0; i < newData.length(); i++)
+                myJsonArrayAsList.add(newData.getJSONObject(i));
+
+            Collections.sort(myJsonArrayAsList, new Comparator<JSONObject>() {
+                @Override
+                public int compare(JSONObject jsonObjectA, JSONObject jsonObjectB) {
+                    int compare = 0;
+                    try {
+                        String keyA = jsonObjectA.getString("buttonText").toLowerCase();
+                        String keyB = jsonObjectB.getString("buttonText").toLowerCase();
+                        compare = keyA.compareTo(keyB);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    return compare;
+                }
+            });
+            storage = new JSONArray();
+            for (int i = 0; i < myJsonArrayAsList.size(); i++) {
+                storage.put(myJsonArrayAsList.get(i));
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     public void save() {
+        setData(storage);
         SP.putString("QuickWizard", storage.toString());
     }
 
@@ -103,7 +129,7 @@ public class QuickWizard {
                     names.add(activeEntry);
                 }
                 Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
-                names.add(0,SELECT_MEAL);
+                names.add(0, SELECT_MEAL);
 
                 final AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getActivity());
                 LayoutInflater inflater = fragment.getLayoutInflater();
