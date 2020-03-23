@@ -630,15 +630,6 @@ public class HypoPredictorPlugin extends PluginBase {
     private void executeHypoAlert(BGLow hypo) {
         long nextHypoAlarm = SP.getLong("nextHypoAlarm", 0L);
         if (nextHypoAlarm <= now()) {
-
-            long hypoStart = SP.getLong("hypoStart", now());
-            if (nextHypoAlarm < now() - 20 * 60 * 1000) {
-                // new hypo
-                hypoStart = now();
-                SP.putLong("hypoStart", hypoStart);
-                log.info("Start of hypo");
-            }
-
             // Calculate #grams required to get BG back to LOW level
             int reqSugar = 0, reqCarbs = 0;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
@@ -657,14 +648,24 @@ public class HypoPredictorPlugin extends PluginBase {
             }
 
             if (reqSugar > 0) {
+                log.info("Hypo detected in "+inMins+" min., need "+reqSugar+" sugar");
                 if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
                     double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 4d),
                             mCurrentProfile.getUnits());
                     if (reqSugar > 10 || mLastStatus.glucose < hypoAlertLevel)
                         MealAdvisorPlugin.getPlugin().startMeal();
+                    else
+                        log.info("Hypo not imminent, meal not yet started");
                 } else {
-                    int dextros30Min = (int) (Math.ceil(reqSugar / 2.5) + 0.5);
-                    int dextros60Min = (int) (Math.ceil((reqCarbs) / 2.5) + 0.5 - dextros30Min);
+                    long hypoStart = SP.getLong("hypoStart", now());
+                    if (nextHypoAlarm < now() - 20 * 60 * 1000) {
+                        // new hypo
+                        hypoStart = now();
+                        SP.putLong("hypoStart", hypoStart);
+                    }
+
+                    int dextros30Min = (int) (Math.ceil(reqSugar / 2.5));
+                    int dextros60Min = (int) (Math.ceil((reqCarbs) / 2.5) - dextros30Min);
                     String sMins, sCarbs = "";
                     if (inMins > 0)
                         sMins = MainApp.gs(R.string.hypoppred_alert_msg, inMins);
@@ -681,8 +682,8 @@ public class HypoPredictorPlugin extends PluginBase {
                     if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {
                         NSUpload.uploadError(n.text);
                     }
+                    log.info("Alarm raised.");
                 }
-                log.info("Alarm raised.");
                 SP.putLong("nextHypoAlarm", now() + 15 * 60 * 1000);
             } else
                 log.info("No alarm raised (no carbs required)");
