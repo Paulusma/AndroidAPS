@@ -633,6 +633,7 @@ public class HypoPredictorPlugin extends PluginBase {
             // Calculate #grams required to get BG back to LOW level
             int reqSugar = 0, reqCarbs = 0;
             long inMins = hypo.getLowLevelMins() < 0 ? 0 : hypo.getLowLevelMins();
+            log.info("Hypo detected in "+inMins+" min.");
             if (hypo.getLowestBGMins() != -1) {
                 double lowLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_bg, 0.0d),
                         mCurrentProfile.getUnits());
@@ -648,7 +649,7 @@ public class HypoPredictorPlugin extends PluginBase {
             }
 
             if (reqSugar > 0) {
-                log.info("Hypo detected in "+inMins+" min., need "+reqSugar+" sugar");
+                log.info("Need "+reqSugar+" sugar");
                 if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
                     double hypoAlertLevel = Profile.toMgdl(SP.getDouble(R.string.key_hypoppred_threshold_alert, 4d),
                             mCurrentProfile.getUnits());

@@ -176,11 +176,12 @@ public class MealAdvisorPlugin extends PluginBase {
                 ConsumedMeal meal = getConsumedMeal(i);
 
                 if (meal.getDate() < now() && meal.getDate() > now() - 45 * 60 * 1000) {
-                    double timeFactor = (meal.getDate() + 45 * 60 * 1000 - now())*1.0d / (45 * 60 * 1000);
+                    double timeFactor = (meal.getDate() + 55 * 60 * 1000 - now())*1.0d / (45 * 60 * 1000);
+                    timeFactor = (now()-meal.getDate()<=10*60*1000)?1.0:timeFactor;
                     double mealSugarLeft = meal.getCarbs() * meal.getGlycemicIndex() * timeFactor / 100;
                     sugarLeft += mealSugarLeft;
-//                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
-//                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex() + "%)");
+                    log.info("Sugar left from '" + meal.getNotes() + "'@" + DateUtil.dateAndTimeFullString(meal.getDate()) + ":" +
+                            mealSugarLeft + " (" +  100*timeFactor  + "% of " + meal.getCarbs()+"*"+meal.getGlycemicIndex() + "%)");
                 }
             }
         }
@@ -196,7 +197,9 @@ public class MealAdvisorPlugin extends PluginBase {
             log.info("Included meal @"+DateUtil.dateAndTimeFullString(meal.getLong("date"))+": " + data);
             if(mealCarbs == 0){
                 log.info("Spurious meal!!!");
-                new Exception().printStackTrace();
+                for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                    log.info(ste.toString());
+                }
             }
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
