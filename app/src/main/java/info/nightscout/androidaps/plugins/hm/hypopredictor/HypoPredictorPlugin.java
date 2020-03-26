@@ -648,6 +648,7 @@ public class HypoPredictorPlugin extends PluginBase {
                 }
             }
 
+
             if (reqSugar > 0) {
                 log.info("Need "+reqSugar+" sugar");
                 if (MealAdvisorPlugin.getPlugin().isEnabled(PluginType.GENERAL) && MealAdvisorPlugin.getPlugin().getScheduledCarbs() > 0) {
@@ -663,6 +664,15 @@ public class HypoPredictorPlugin extends PluginBase {
                         // new hypo
                         hypoStart = now();
                         SP.putLong("hypoStart", hypoStart);
+                    }
+
+                    if (now()-hypoStart>10*60*1000 && mLastStatus.glucose > 3*18){
+                        // 2nd and subsequent alarms: only take action if substantially more sugar needed than previously thought OR BG critical
+                        reqSugar = Math.max(reqSugar-4,0);
+                        if(reqSugar == 0){
+                            log.info("No alarm raised (no carbs required)");
+                            return;
+                        }
                     }
 
                     int dextros30Min = (int) (Math.ceil(reqSugar / 2.5));
@@ -685,7 +695,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     }
                     log.info("Alarm raised.");
                 }
-                SP.putLong("nextHypoAlarm", now() + 16 * 60 * 1000);
+                SP.putLong("nextHypoAlarm", now() + 13 * 60 * 1000);
             } else
                 log.info("No alarm raised (no carbs required)");
         } else
