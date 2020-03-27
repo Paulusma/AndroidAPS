@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.ref.WeakReference;
 
 import info.nightscout.androidaps.activities.AgreementActivity;
-import info.nightscout.androidaps.activities.HistoryBrowseActivity;
 import info.nightscout.androidaps.activities.PreferencesActivity;
 import info.nightscout.androidaps.activities.SingleFragmentActivity;
 import info.nightscout.androidaps.data.Profile;
@@ -393,9 +392,10 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(i);
                 }, null);
                 return true;
-            case R.id.nav_historybrowser:
+/*            case R.id.nav_historybrowser:
                 startActivity(new Intent(this, HistoryBrowseActivity.class));
                 return true;
+*/
             case R.id.nav_stateviewer:
                 startActivity(new Intent(this, StateDataActivity.class));
                 return true;
