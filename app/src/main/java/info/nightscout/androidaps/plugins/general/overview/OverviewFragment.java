@@ -1150,10 +1150,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 pumpBatteryLevelView.setText("REPLACE PUMP BATTERY "+batteryLevel+"%");
                 pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationUrgent));
             }else if(batteryLevel <= 60) {
-                pumpBatteryLevelView.setText("Pumpbattery LOW "+batteryLevel+"%");
+                pumpBatteryLevelView.setText("Pump battery LOW "+batteryLevel+"%");
                 pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationAnnouncement));
             }else{
-                pumpBatteryLevelView.setText("Pumpbattery "+batteryLevel+"%");
+                pumpBatteryLevelView.setText("Pump battery "+batteryLevel+"%");
                 pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
             }
         }
