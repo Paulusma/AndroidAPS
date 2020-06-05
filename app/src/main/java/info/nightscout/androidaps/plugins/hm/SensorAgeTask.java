@@ -37,7 +37,7 @@ public class SensorAgeTask implements Runnable {
     private static long lastCalled = 0;
     private static String lastSensorAge = "";
     private static String lastHba1c = "";
-    private double maxAge = 14.0;
+    private double maxAge = 13.5;
 
     public SensorAgeTask(Activity _act, TextView _tv, TextView _tv2) {
         act = _act;

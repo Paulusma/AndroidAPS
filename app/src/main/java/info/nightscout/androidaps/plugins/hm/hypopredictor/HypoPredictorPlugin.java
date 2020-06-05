@@ -687,7 +687,7 @@ public class HypoPredictorPlugin extends PluginBase {
                     n.soundId = R.raw.urgentalarm;
                     double ncGrams = (int) reqSugar;
                     n.action(MainApp.gs(R.string.request), () ->
-                            new NewCarbsDialog().setInitialValues(ncGrams, 100, MainApp.gs(R.string.hypopred_corr_note, dextros30Min+dextros60Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
+                            new NewCarbsDialog().setInitialValues(ncGrams, 100, MainApp.gs(R.string.hypopred_corr_note, dextros30Min)).show(MainActivity.instance().getSupportFragmentManager(), "CarbsDialog"));
                     MainApp.bus().post(new EventNewNotification(n));
 
                     if (SP.getBoolean(R.string.key_ns_create_announcements_from_errors, true)) {

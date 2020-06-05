@@ -153,6 +153,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     TextView tempTargetView;
     TextView pumpStatusView;
     TextView pumpDeviceStatusView;
+    TextView pumpBatteryLevelView;
     TextView openapsDeviceStatusView;
     TextView uploaderDeviceStatusView;
     TextView iobCalculationProgressView;
@@ -249,6 +250,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         sensorAgeView = (TextView) view.findViewById(R.id.overview_sage);
         hba1cView = (TextView) view.findViewById(R.id.overview_hba1c);
         insulinLeftView = (TextView) view.findViewById(R.id.overview_insulinleft);
+        pumpBatteryLevelView = (TextView) view.findViewById(R.id.overview_pumpbatterylevel);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
@@ -1119,7 +1121,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
         }
 
-        //!!! Check battery level
+        //!!! Check sensor battery level
         try {
             AsyncTask.execute(new BatteryLevelTask(getActivity()));
         } catch (Exception e) {
@@ -1139,6 +1141,20 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }else{
                 insulinLeftView.setText("Insulin left: "+reservoirLevel+"U");
                 insulinLeftView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
+            }
+        }
+
+        if (pumpBatteryLevelView != null) {
+            double batteryLevel = pump.isInitialized() ? pump.getBatteryLevel() : -1;
+            if(batteryLevel < 70) {
+                pumpBatteryLevelView.setText("REPLACE PUMP BATTERY "+batteryLevel+"%");
+                pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationUrgent));
+            }else if(batteryLevel <= 60) {
+                pumpBatteryLevelView.setText("Pumpbattery LOW "+batteryLevel+"%");
+                pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.notificationAnnouncement));
+            }else{
+                pumpBatteryLevelView.setText("Pumpbattery "+batteryLevel+"%");
+                pumpBatteryLevelView.setTextColor(ContextCompat.getColor(MainApp.instance().getApplicationContext(), R.color.colorLightGray));
             }
         }
 
