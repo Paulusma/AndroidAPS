@@ -1,13 +1,1 @@
-Based on 2.3 with additions:
-
-- low BG prevention and hypo predictor plugin
-- plugin that drops BG target on stable BG
-- wizard using predefined meals
-- auto pre-bolus/eating soon after selecting meal & message when to start eating
-- fast history browser plugin stateviewer
-- warns when libre sensor is past 13 days (depends on xDrip mod)
-- NS upload of BG reading so xDrip can be local (depends on xDrip mod)
-- black background on overview
-- display insuline left on overview and ignore 25U left on insight pump warning
-- warning when phone battery < 20% and not charging
-- some minor changes
+Core implementation for additions to the base AndroidAPS V2.3
