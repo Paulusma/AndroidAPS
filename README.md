@@ -1,7 +1,24 @@
 # AndroidAPS
 
-* Check the wiki: http://wiki.androidaps.org
+*  Check the wiki: http://wiki.androidaps.org
 *  Everyone who’s been looping with AndroidAPS needs to fill out the form after 3 days of looping  https://docs.google.com/forms/d/14KcMjlINPMJHVt28MDRupa4sz4DDIooI4SrW0P3HSN8/viewform?c=0&w=1
+
+This version tailored to my wife's needs & preferences.
+Based on 2.3 with additions (core implementation as plugins in package info.nightscout.androidaps.plugins.hm):
+
+- low BG prevention and hypo predictor plugin
+- plugin that drops BG target on stable BG
+- wizard using predefined meals
+- auto pre-bolus/eating soon after selecting meal & message when to start eating
+- fast history browser plugin stateviewer
+- warning when insulin reservoir low
+- warning when pump battery low
+- warning when libre sensor is past 13 days (depends on xDrip mod)
+- NS upload of BG reading so xDrip can be local (depends on xDrip mod)
+- black background on overview
+- display insuline left on overview and ignore 25U left on insight pump warning
+- warning when phone battery < 20% and not charging
+- some minor changes
 
 [![Gitter](https://badges.gitter.im/MilosKozak/AndroidAPS.svg)](https://gitter.im/MilosKozak/AndroidAPS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build status](https://travis-ci.org/MilosKozak/AndroidAPS.svg?branch=master)](https://travis-ci.org/MilosKozak/AndroidAPS)
