@@ -3,7 +3,7 @@
 This version is tailored to my wife's needs, configuration (libre sensors & akkuchek Insight pump) & preferences.
 Provided for informational purpose only. DO NOT USE to build your own, use the latest stable release of AndroidAPS instead!
 
-Based on 2.3 with additions (core implementation as plugins in package https://github.com/Paulusma/AndroidAPS/tree/AutoSetHypoTT:
+Based on 2.3 with additions (core implementation as plugins in package https://github.com/Paulusma/AndroidAPS/tree/AutoSetHypoTT/hm):
 
 - low BG prevention and hypo predictor plugin
 - plugin that drops BG target on stable BG
