@@ -1,9 +1,9 @@
-# AndroidAPS
+# Trixies AndroidAPS
 
 This version is tailored to my wife's needs, configuration (libre sensors & akkuchek Insight pump) & preferences.
 Provided for informational purpose only. DO NOT USE to build your own, use the latest stable release of AndroidAPS instead!
 
-<img src="Config_Trix.png" alt="Trixies config"/>
+<img src="TBD Config_Trix.png" alt="Trixies config"/>
 
 Based on 2.3 with additions (core implementation as plugins in package https://github.com/Paulusma/AndroidAPS/tree/AutoSetHypoTT/app/src/main/java/info/nightscout/androidaps/plugins/hm):
 
