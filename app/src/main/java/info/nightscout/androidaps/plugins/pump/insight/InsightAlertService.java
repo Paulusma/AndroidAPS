@@ -169,12 +169,22 @@ public class InsightAlertService extends Service implements InsightConnectionSer
                             new Handler(Looper.getMainLooper()).post(() -> startActivity(intent));
                         }
                     }
-                    if (alert != null && alert.getAlertType() == AlertType.WARNING_31) {
-                        // Low insulin warning handled by text color on overview
-                        try {
-                            confirm();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    if (alert != null){
+                        if(alert.getAlertType() == AlertType.WARNING_31) {
+                            log.info("Trying to confirm W31 on pump...");
+                            // Low insulin warning handled by text color on overview
+                            try {
+                                confirm();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }else if(alert.getAlertType() == AlertType.REMINDER_07) {
+                            log.info("Trying to confirm R7 on pump...");
+                            try {
+                                confirm();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -245,7 +255,6 @@ public class InsightAlertService extends Service implements InsightConnectionSer
     public void confirm() {
         new Thread(() -> {
             try {
-                log.info("Trying to confirm W31 on pump...");
                 ConfirmAlertMessage confirmAlertMessage = new ConfirmAlertMessage();
                 confirmAlertMessage.setAlertID(alert.getAlertId());
                 connectionService.requestMessage(confirmAlertMessage).await();
